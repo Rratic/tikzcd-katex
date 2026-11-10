@@ -1,0 +1,16 @@
+{
+  "name": "tikzcd-katex",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "A minimal tikzcd extension for KaTeX.",
+  "scripts": {
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28",
+    "katex": "0.19",
+    "typescript": "7"
+  }
+}
