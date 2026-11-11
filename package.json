@@ -4,6 +4,7 @@
   "type": "module",
   "description": "A minimal tikzcd extension for KaTeX.",
   "scripts": {
+    "build": "node scripts/build.mjs"
   },
   "engines": {
     "node": ">=22.18.0"
