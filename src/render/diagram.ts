@@ -46,6 +46,10 @@ function unit(value: number): string {
   return Number(value.toFixed(6)) + "em";
 }
 
+function unit_px(value: number): string {
+  return Number(value.toFixed(6)) + "px";
+}
+
 /**
  * 定位标签
  *
@@ -66,11 +70,10 @@ function positionLabel(label: HTMLElement, geometry: ReturnType<typeof layoutArr
   const width = parseFloat(style.width), height = parseFloat(style.height);
   const distance = (Math.abs(nx) * width + Math.abs(ny) * height) / 2 + em * 0.12;
   const position = (arrow.label_position ?? 50) / 100;
-  const pixels = (value: number) => Number(value.toFixed(6)) + "px";
   const x = start.x + dx * position + nx * distance - width / 2;
   const y = start.y + dy * position + ny * distance - height / 2;
-  setStyle(label, "left", pixels(x));
-  setStyle(label, "top", pixels(y));
+  setStyle(label, "left", unit_px(x));
+  setStyle(label, "top", unit_px(y));
   setStyle(label, "transform", arrow.label_alignment === "over" ? "rotate(" + Math.atan2(dy, dx) + "rad)" : "none");
   setStyle(label, "visibility", "visible");
   return { x, y, width, height };
@@ -79,7 +82,8 @@ function positionLabel(label: HTMLElement, geometry: ReturnType<typeof layoutArr
 /** 应用布局 */
 function renderDiagram(diagram: MountedDiagram): void {
   const { root, cells, arrows, labels, svg, grid, metrics } = diagram;
-  const window = root.ownerDocument.defaultView!;
+  const document = root.ownerDocument;
+  const window = document.defaultView!;
   if (!root.getClientRects().length || !root.getBoundingClientRect().height) return;
   const em = parseFloat(window.getComputedStyle(root).fontSize);
   for (const cell of cells) {
@@ -101,7 +105,7 @@ function renderDiagram(diagram: MountedDiagram): void {
     for (const label of labels.values()) setStyle(label, "visibility", "hidden");
     return;
   }
-  const style = root.ownerDocument.defaultView!.getComputedStyle(root);
+  const style = document.defaultView!.getComputedStyle(root);
   const width = parseFloat(style.width), height = parseFloat(style.height);
   // 将 viewport 坐标转为 SVG 坐标
   const sx = rect.width / width, sy = rect.height / height;
@@ -117,19 +121,19 @@ function renderDiagram(diagram: MountedDiagram): void {
     });
   }
   try {
-    const defs = root.ownerDocument.createElementNS(SVG, "defs");
+    const defs = document.createElementNS(SVG, "defs");
     const paths = arrows.map((arrow, index) => {
       const geometry = layoutArrow(boxes.get(addressKey(arrow.source))!, boxes.get(addressKey(arrow.target))!, em);
       const label = labels.get(index);
       const labelBox = label ? positionLabel(label, geometry, arrow, em) : undefined;
-      const path = root.ownerDocument.createElementNS(SVG, "path");
+      const path = document.createElementNS(SVG, "path");
       // KaTeX CSS 默认设置 .katex svg path { stroke: none }。
       path.style.cssText = "fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round";
       path.setAttribute("d", geometry.path);
       path.setAttribute("stroke-width", String(geometry.strokeWidth));
       if (labelBox && arrow.label_alignment === "centre") {
         // 只裁剪此箭头，避免依赖页面背景色或遮住交叉的其他箭头。
-        const mask = root.ownerDocument.createElementNS(SVG, "mask");
+        const mask = document.createElementNS(SVG, "mask");
         const id = "tikzcd-label-" + diagram.id + "-" + index;
         mask.id = id;
         mask.setAttribute("maskUnits", "userSpaceOnUse");
@@ -144,7 +148,7 @@ function renderDiagram(diagram: MountedDiagram): void {
             width: labelBox.width + em * 0.24, height: labelBox.height + em * 0.24
           }, "black"],
         ] as const) {
-          const rect = root.ownerDocument.createElementNS(SVG, "rect");
+          const rect = document.createElementNS(SVG, "rect");
           for (const key of ["x", "y", "width", "height"] as const) rect.setAttribute(key, String(box[key]));
           rect.style.fill = fill;
           mask.appendChild(rect);
@@ -164,7 +168,7 @@ function renderDiagram(diagram: MountedDiagram): void {
     const message = error instanceof Error ? error.message : String(error);
     if (diagram.error !== message) {
       diagram.error = message;
-      root.dispatchEvent(new root.ownerDocument.defaultView!.CustomEvent("tikzcd:layout-error", {
+      root.dispatchEvent(new window.CustomEvent("tikzcd:layout-error", {
         bubbles: true, detail: { message },
       }));
     }
