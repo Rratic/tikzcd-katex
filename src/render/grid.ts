@@ -79,7 +79,7 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
     root.height = layout.height;
     root.depth = layout.depth;
     root.maxFontSize = Math.max(options.sizeMultiplier, ...native.flat().map(cell => cell.maxFontSize));
-    root.setAttribute("data-tikzcd", JSON.stringify(diagram.arrows));
+    root.setAttribute("data-tikzcd", JSON.stringify(diagram.arrows.map(({ source, target }) => ({ source, target }))));
     root.setAttribute("data-tikzcd-layout", JSON.stringify({
       rows: metrics, settings, cellAxis: textOptions.fontMetrics().axisHeight * scale,
     }));

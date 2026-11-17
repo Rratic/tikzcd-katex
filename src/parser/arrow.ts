@@ -1,7 +1,9 @@
 import type katex from "katex";
 import type { Token } from "katex";
 import type { FormulaNode, Parser } from "../adapter/katex";
-import type { CellAddress, DiagramArrow } from "../model/diagram";
+import type { CellAddress } from "../model/diagram";
+import { createArrow } from "../model/arrow";
+import type { DiagramArrow } from "../model/arrow";
 
 export interface ArrowDeclaration extends FormulaNode {
   type: "tikzcdArrow";
@@ -51,7 +53,7 @@ export function parseArrow(
 
   const declaration: ArrowDeclaration = {
     type: "tikzcdArrow", mode: parser.mode,
-    arrow: { from: endpoints.from, to: endpoints.to }, token,
+    arrow: createArrow(endpoints.from, endpoints.to), token,
   };
   declarations.push(declaration);
   return declaration;

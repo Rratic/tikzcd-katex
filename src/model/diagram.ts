@@ -1,3 +1,5 @@
+import type { DiagramArrow } from "./arrow";
+
 /** 图表单元格 */
 export interface DiagramCell<Formula> {
   row: number;
@@ -16,12 +18,6 @@ export interface Diagram<Formula> {
 export interface CellAddress {
   row: number;
   column: number;
-}
-
-/** 图表箭头 */
-export interface DiagramArrow {
-  from: CellAddress;
-  to: CellAddress;
 }
 
 /** 将单元格地址转为键 */

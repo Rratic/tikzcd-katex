@@ -80,7 +80,7 @@ function parseDiagramBody(
 
   // 不存在的端点
   for (const { arrow, token } of arrows) {
-    for (const address of [arrow.from, arrow.to]) {
+    for (const address of [arrow.source, arrow.target]) {
       if (!rows[address.row]?.[address.column]) {
         throw new ParseError("\\arrow endpoint does not exist: " + (address.row + 1) + "-" + (address.column + 1), token);
       }

@@ -1,17 +1,19 @@
 import { layoutArrow } from "../geometry/arrow";
 import type { CellBox } from "../geometry/arrow";
 import { addressKey } from "../model/diagram";
-import type { DiagramArrow } from "../model/diagram";
+import type { DiagramArrow } from "../model/arrow";
 import { layoutGrid } from "../layout/grid";
 import type { CellMetrics, GridSettings } from "../layout/grid";
 
 const ROOT = "[data-tikzcd]";
 const SVG = "http://www.w3.org/2000/svg";
 
+type ArrowEndpoints = Pick<DiagramArrow, "source" | "target">;
+
 interface MountedDiagram {
   root: HTMLElement;
   cells: HTMLElement[];
-  arrows: DiagramArrow[];
+  arrows: ArrowEndpoints[];
   svg?: SVGSVGElement;
   grid: HTMLElement;
   metrics: { rows: CellMetrics[][]; settings: GridSettings; cellAxis: number };
@@ -81,7 +83,7 @@ function renderDiagram(diagram: MountedDiagram): void {
   }
   try {
     const paths = arrows.map(arrow => {
-      const geometry = layoutArrow(boxes.get(addressKey(arrow.from))!, boxes.get(addressKey(arrow.to))!, em);
+      const geometry = layoutArrow(boxes.get(addressKey(arrow.source))!, boxes.get(addressKey(arrow.target))!, em);
       const path = root.ownerDocument.createElementNS(SVG, "path");
       // KaTeX CSS 默认设置 .katex svg path { stroke: none }。
       path.style.cssText = "fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round";
@@ -150,7 +152,7 @@ function createManager(document: Document) {
       if (!root.isConnected || mounted.has(root)) continue;
       const cells = [...root.querySelectorAll<HTMLElement>("[data-tikzcd-cell]")]
         .filter(cell => cell.closest(ROOT) === root);
-      const arrows = JSON.parse(root.dataset.tikzcd!) as DiagramArrow[];
+      const arrows = JSON.parse(root.dataset.tikzcd!) as ArrowEndpoints[];
       let svg: SVGSVGElement | undefined;
       if (arrows.length) {
         svg = document.createElementNS(SVG, "svg");
