@@ -1,7 +1,8 @@
 import type katex from "katex";
 import type { Diagram, DiagramCell } from "../model/diagram";
+import type { DiagramArrow } from "../model/arrow";
 import type { FormulaNode, Parser } from "../adapter/katex";
-import { arrowContexts } from "./arrow";
+import { arrowContexts, resolveArrow } from "./arrow";
 import type { ArrowDeclaration } from "./arrow";
 
 /** 图表解析 */
@@ -30,7 +31,7 @@ function parseDiagramBody(
   declarations: ArrowDeclaration[],
 ): Diagram<FormulaNode[]> {
   const rows: DiagramCell<FormulaNode[]>[][] = [];
-  const arrows: ArrowDeclaration[] = [];
+  const arrows: { arrow: DiagramArrow; token?: ArrowDeclaration["token"] }[] = [];
   let row: DiagramCell<FormulaNode[]>[] = [];
 
   // 图表作用域
@@ -46,7 +47,10 @@ function parseDiagramBody(
     if (topLevel.length !== declarations.length) {
       throw new ParseError("\\arrow must be a top-level tikzcd cell declaration", declarations[0]?.token);
     }
-    arrows.push(...declarations);
+    const origin = { row: rows.length, column: row.length };
+    for (const declaration of declarations) {
+      arrows.push({ arrow: resolveArrow(declaration, origin), token: declaration.token });
+    }
     declarations.length = 0;
 
     row.push({ row: rows.length, column: row.length, content });
@@ -59,7 +63,7 @@ function parseDiagramBody(
       row = [];
     } else if (next.text === "\\end") {
       // 末尾的换行无效
-      if (row.length > 1 || content.length > 0) rows.push(row);
+      if (row.length > 1 || content.length > 0 || topLevel.length > 0) rows.push(row);
       break;
     } else { // EOF
       throw new ParseError("Expected & or \\\\ or \\end{tikzcd}", next);
