@@ -65,7 +65,7 @@ TikzcdKaTeX.setTikzcdStyle({
 
 ```tex
 \begin{tikzcd}
-  \bullet &amp; \bullet
+  \bullet & \bullet
   \arrow[from=1-1, to=1-2]
 \end{tikzcd}
 ```

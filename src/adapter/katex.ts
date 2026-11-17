@@ -44,7 +44,7 @@ export interface Parser {
   /**
    * 解析一个表达式（一列原子表达式）
    * 
-   * @param breakOnInfix 到达中缀节点是是否停止
+   * @param breakOnInfix 到达中缀节点时是否停止
    * @param breakOnTokenText 表达式应停止的 token 文本
    */
   parseExpression(breakOnInfix: boolean, breakOnTokenText?: string): FormulaNode[];
