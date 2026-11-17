@@ -18,6 +18,8 @@
 
     <!-- 加载本地 Tikzcd-KaTeX -->
     <script src="/dist/tikzcd-katex.min.js"></script>
+    <!-- 通过 JsDelivr 加载指定版本 -->
+    <script src="https://cdn.jsdelivr.net/npm/tikzcd-katex@0.1.0/dist/tikzcd-katex.min.js"></script>
 
     <!-- 使用 KaTeX auto-render -->
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.19.1/dist/contrib/auto-render.min.js" integrity="sha384-bjyGPfbij8/NDKJhSGZNP/khQVgtHUE5exjm4Ydllo42FwIgYsdLO2lXGmRBf5Mz" crossorigin="anonymous"
