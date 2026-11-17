@@ -1,6 +1,7 @@
 // 移植自 [quiver](https://github.com/varkor/quiver)
 
 import type { CellAddress } from "./diagram";
+import type { NamedOption } from "../parser/options";
 
 /** 箭头的头部、主体和尾部样式 */
 export interface ArrowOptionsStyle {
@@ -41,6 +42,15 @@ export interface ArrowOptions {
 
   /** 箭头样式 */
   style: ArrowOptionsStyle;
+}
+
+export function applyLabelOption(option: NamedOption, options: ArrowOptions): void {
+  if (option.value !== undefined) return;
+  switch (option.key) {
+    case "description": options.label_alignment = "centre"; break;
+    case "marking": options.label_alignment = "over"; break;
+    case "swap": options.label_alignment = "right"; break;
+  }
 }
 
 /** 图表箭头 */

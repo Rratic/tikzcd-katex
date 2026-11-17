@@ -65,11 +65,11 @@ TikzcdKaTeX.installTikzcd(katex);
 \end{tikzcd}
 ```
 
-在标签后加 `{description}` 会将标签水平放在箭头中央，并留出空隙；加 `{marking}` 则会直接覆盖在箭头上：
+在标签后加 `description` 会将标签水平放在箭头中央，并留出空隙；加 `marking` 则会直接覆盖在箭头上：
 
 ```tex
 \begin{tikzcd}
-  A \arrow[r, "f"{description}] & B \\
-  C \arrow[r, "g"{marking}] & D
+  A \arrow[r, "f" description] & B \\
+  C \arrow[r, "g" marking] & D
 \end{tikzcd}
 ```
