@@ -41,9 +41,11 @@ TikzcdKaTeX.installTikzcd(katex);
 使用 `setTikzcdStyle` 设置全局行列间距，如：
 
 ```js
+// 单位均为 em
 TikzcdKaTeX.setTikzcdStyle({
   "row sep": 1.8,
-  "column sep": 2.4
+  "column sep": 2.4,
+  "arrow pad": 0.24, // 自定义量，计算箭头起始点时的间距
 });
 ```
 

@@ -2,6 +2,7 @@ import type katex from "katex";
 import { registerTikzcdEnvironment } from "./adapter/environment";
 import { renderDiagrams } from "./render/diagram";
 import { setRowSep, setColumnSep } from "./render/grid";
+import { setArrowPadding } from "./geometry/arrow";
 
 const installed = new WeakSet<object>();
 
@@ -29,5 +30,8 @@ export function setTikzcdStyle(setting: Record<string, unknown>): void {
   }
   if (typeof setting["column sep"] === "number") {
     setColumnSep(setting["column sep"]);
+  }
+  if (typeof setting["arrow pad"] === "number") {
+    setArrowPadding(setting["arrow pad"]);
   }
 }

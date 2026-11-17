@@ -6,6 +6,15 @@ import { Path } from "./path";
 import { Point } from "./point";
 import { RoundedRectangle } from "./shape";
 
+/** 箭头的间距，单位为 em */
+let ARROW_PADDING = 0.24;
+
+export function setArrowPadding(padding: number): void {
+  if (Number.isFinite(padding) && padding >= 0) {
+    ARROW_PADDING = padding;
+  }
+}
+
 /** DOM 测量后的内容框 */
 export interface CellBox {
   x: number;
@@ -46,13 +55,13 @@ function findEndpoint(curve: Line, shape: RoundedRectangle, preferMin: boolean):
 }
 
 /**
- * 内容框外扩原有的 0.08em 留白，并以留白为圆角半径
+ * 内容框外扩 `ARROW_PADDING` 大小的留白，并以留白为圆角半径
  *
  * @param box 目标内容框
  * @param em 当前环境 1em 对应长度
  */
 function extendMargin(box: CellBox, em: number) {
-  const padding = em * 0.08;
+  const padding = em * ARROW_PADDING;
 
   // 零大小不加留白
   const empty = box.width == 0 && box.height == 0;
@@ -71,7 +80,8 @@ function extendMargin(box: CellBox, em: number) {
  * @param em 当前环境 1em 对应长度
  */
 export function layoutArrow(from: CellBox, to: CellBox, em: number) {
-  const padding = em * 0.08, headWidth = em * 0.28, headHeight = em * 0.24;
+  const padding = em * ARROW_PADDING;
+  const headWidth = em * 0.28, headHeight = em * 0.24;
   const source = extendMargin(from, em), target = extendMargin(to, em);
   const curve = new Line(source.centre, target.centre);
 
