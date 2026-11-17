@@ -1,6 +1,8 @@
 # Tikzcd-KaTeX
 为 [KaTeX](https://katex.org/) 提供基础的 [`tikzcd`](https://tikz.dev/tikz-cd/) 环境支持。
 
+项目移植了部分来自 [quiver](https://github.com/varkor/quiver) 的代码，详见 [NOTICE](NOTICE.md).
+
 ## 使用
 ```html
 <!DOCTYPE html>
