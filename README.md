@@ -36,6 +36,28 @@ TikzcdKaTeX.installTikzcd(katex);
 
 之后可以调用 `katex.render`，但不支持 `katex.renderToString`，因为需要在 DOM 中操作。且 `katex.render` 强制为 `string` 模式，不提供对应的 MathML 标记。
 
+---
+
+使用 `setTikzcdStyle` 设置全局行列间距，如：
+
+```js
+TikzcdKaTeX.setTikzcdStyle({
+  "row sep": 1.8,
+  "column sep": 2.4
+});
+```
+
+可以参考下表：
+
+| size | row sep | column sep |
+| :--: | :-----: | :--------: |
+| tiny | 0.45 em | 0.6 em |
+| small | 0.9 em | 1.2 em |
+| scriptsize | 1.35 em | 1.8 em |
+| normal | 1.8 em | 2.4 em |
+| large | 2.7 em | 3.6 em |
+| huge | 3.6 em | 4.8 em |
+
 ## 使用说明
 用 `\begin{tikzcd}` 引入图表环境。单元格的位置指定与 `array`、`matrix` 等环境相同，使用 `&` 分列，使用 `\\` 分行。
 

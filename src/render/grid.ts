@@ -4,6 +4,23 @@ import { buildCell } from "../adapter/builders";
 import { addressKey } from "../model/diagram";
 import { layoutGrid } from "../layout/grid";
 
+/** 全局行间距，单位为 em */
+let ROW_SEP = 1.8;
+/** 全局列间距，单位为 em */
+let COLUMN_SEP = 2.4;
+
+/** 设置全局行列间距 */
+export function setRowSep(rowSep: number): void {
+  if (Number.isFinite(rowSep) && rowSep >= 0) {
+    ROW_SEP = rowSep;
+  }
+}
+export function setColumnSep(columnSep: number): void {
+  if (Number.isFinite(columnSep) && columnSep >= 0) {
+    COLUMN_SEP = columnSep;
+  }
+}
+
 export interface DiagramNode extends FormulaNode {
   diagram: Diagram<FormulaNode[]>;
 }
@@ -37,8 +54,8 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
     const textOptions = options.havingStyle(options.style.text());
     const scale = textOptions.sizeMultiplier / options.sizeMultiplier;
     const settings = {
-      columnGap: (diagram.arrows.length ? 1.5 : 1) * scale,
-      rowGap: (diagram.arrows.length ? 0.8 : 0.4) * scale,
+      columnGap: COLUMN_SEP * scale,
+      rowGap: ROW_SEP * scale,
       minHeight: 0.7 * scale, minDepth: 0.3 * scale,
       axis: options.fontMetrics().axisHeight,
     };

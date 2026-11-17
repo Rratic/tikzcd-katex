@@ -1,6 +1,7 @@
 import type katex from "katex";
 import { registerTikzcdEnvironment } from "./adapter/environment";
 import { renderDiagrams } from "./render/diagram";
+import { setRowSep, setColumnSep } from "./render/grid";
 
 const installed = new WeakSet<object>();
 
@@ -19,4 +20,14 @@ export function installTikzcd(instance: typeof katex): void {
   };
 
   installed.add(instance);
+}
+
+/** 设置全局样式 */
+export function setTikzcdStyle(setting: Record<string, unknown>): void {
+  if (typeof setting["row sep"] === "number") {
+    setRowSep(setting["row sep"]);
+  }
+  if (typeof setting["column sep"] === "number") {
+    setColumnSep(setting["column sep"]);
+  }
 }
