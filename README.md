@@ -55,3 +55,21 @@ TikzcdKaTeX.installTikzcd(katex);
   C \arrow[r] & D
 \end{tikzcd}
 ```
+
+用 `"math"` 在箭头上添加标签。标签默认在箭头行进方向的左侧，可以在第二个双引号后加 `'` 或用 `swap` 选项将它放在另一侧：
+
+```tex
+\begin{tikzcd}
+  A \arrow[r, "f_i"] \arrow[d, "g"'] & B \arrow[d, "\frac{h}{k}"] \\
+  C \arrow[r, "q", swap] & D
+\end{tikzcd}
+```
+
+在标签后加 `{description}` 会将标签水平放在箭头中央，并留出空隙；加 `{marking}` 则会直接覆盖在箭头上：
+
+```tex
+\begin{tikzcd}
+  A \arrow[r, "f"{description}] & B \\
+  C \arrow[r, "g"{marking}] & D
+\end{tikzcd}
+```

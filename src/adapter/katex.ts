@@ -111,7 +111,7 @@ export type SpanConstructor = new (
 ) => HtmlNode;
 
 export interface StyledCell extends FormulaNode {
-  style: "text";
+  style: "text" | "script";
   resetFont: true;
   body: (FormulaNode & { body: FormulaNode[] })[];
 }

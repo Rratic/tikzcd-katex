@@ -31,7 +31,7 @@ function parseDiagramBody(
   declarations: ArrowDeclaration[],
 ): Diagram<FormulaNode[]> {
   const rows: DiagramCell<FormulaNode[]>[][] = [];
-  const arrows: { arrow: DiagramArrow; token?: ArrowDeclaration["token"] }[] = [];
+  const arrows: { arrow: DiagramArrow<FormulaNode[]>; token?: ArrowDeclaration["token"] }[] = [];
   let row: DiagramCell<FormulaNode[]>[] = [];
 
   // 图表作用域

@@ -12,7 +12,7 @@ export interface ArrowOptionsStyle {
 
 /** 箭头的所有选项 */
 export interface ArrowOptions {
-  label_alignment: "left";
+  label_alignment: "left" | "right" | "centre" | "over";
 
   /** 标签位置，取值 0–100 */
   label_position: number;
@@ -44,45 +44,46 @@ export interface ArrowOptions {
 }
 
 /** 图表箭头 */
-export interface DiagramArrow {
+export interface DiagramArrow<Label = string> {
   source: CellAddress;
   target: CellAddress;
 
   /** n-箭头的 n；与 `options.level` 区分 */
   level: number;
-  label: string;
+  label: Label;
   options: ArrowOptions;
 }
 
-/**
- * 创建普通箭头
- *
- * @param source 起点单元格地址
- * @param target 终点单元格地址
- * @returns 不包含绘图状态的箭头数据
- */
-export function createArrow(source: CellAddress, target: CellAddress): DiagramArrow {
+/** 创建默认箭头选项 */
+export function createArrowOptions(): ArrowOptions {
+  return {
+    label_alignment: "left",
+    label_position: 50,
+    offset: 0,
+    curve: 0,
+    radius: 3,
+    angle: 0,
+    shorten: { source: 0, target: 0 },
+    level: 1,
+    shape: "bezier",
+    edge_alignment: { source: true, target: true },
+    style: {
+      name: "arrow",
+      tail: { name: "none" },
+      body: { name: "cell" },
+      head: { name: "arrowhead" },
+    },
+  };
+}
+
+/** 创建箭头 */
+export function createArrow<Label>(
+  source: CellAddress, target: CellAddress, label: Label, options: ArrowOptions = createArrowOptions(),
+): DiagramArrow<Label> {
   return {
     source, target,
     level: 1,
-    label: "",
-    options: {
-      label_alignment: "left",
-      label_position: 50,
-      offset: 0,
-      curve: 0,
-      radius: 3,
-      angle: 0,
-      shorten: { source: 0, target: 0 },
-      level: 1,
-      shape: "bezier",
-      edge_alignment: { source: true, target: true },
-      style: {
-        name: "arrow",
-        tail: { name: "none" },
-        body: { name: "cell" },
-        head: { name: "arrowhead" },
-      },
-    },
+    label,
+    options,
   };
 }

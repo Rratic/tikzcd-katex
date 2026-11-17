@@ -66,20 +66,39 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
       display: "block", position: "relative", height: "0",
     });
 
+    const labels = diagram.arrows.flatMap((arrow, index) => {
+      if (!arrow.label.length) return [];
+      const formula = buildCell(this, arrow.label, mode, options, "script");
+      const strut = new Span([], [], undefined, {
+        display: "inline-block", width: "0", height: em(formula.height + formula.depth),
+        verticalAlign: em(-formula.depth),
+      });
+      const label = new Span([], [formula, strut], undefined, {
+        display: "inline-block", position: "absolute", whiteSpace: "nowrap", lineHeight: "0",
+        width: "max-content", height: em(formula.height + formula.depth),
+        visibility: "hidden", pointerEvents: "none", zIndex: "1",
+      });
+      label.setAttribute("data-tikzcd-label", String(index));
+      return [label];
+    });
+
     // 独立的基线支撑
     const baseline = new Span([], [], undefined, {
       display: "inline-block", width: "0", height: em(layout.total), verticalAlign: "baseline",
     });
 
     // 根节点
-    const root = new Span(["mord", "tikzcd"], [grid, baseline], options, {
+    const root = new Span(["mord", "tikzcd"], [grid, baseline, ...labels], options, {
       display: "inline-block", position: "relative", textAlign: "initial", lineHeight: "0",
       height: em(layout.total), verticalAlign: em(-layout.depth),
     });
     root.height = layout.height;
     root.depth = layout.depth;
     root.maxFontSize = Math.max(options.sizeMultiplier, ...native.flat().map(cell => cell.maxFontSize));
-    root.setAttribute("data-tikzcd", JSON.stringify(diagram.arrows.map(({ source, target }) => ({ source, target }))));
+    root.setAttribute("data-tikzcd", JSON.stringify(diagram.arrows.map(({ source, target, label, options }) => ({
+      source, target,
+      ...(label.length ? { label_alignment: options.label_alignment, label_position: options.label_position } : {}),
+    }))));
     root.setAttribute("data-tikzcd-layout", JSON.stringify({
       rows: metrics, settings, cellAxis: textOptions.fontMetrics().axisHeight * scale,
     }));

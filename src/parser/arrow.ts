@@ -2,12 +2,14 @@ import type katex from "katex";
 import type { Token } from "katex";
 import type { FormulaNode, Parser } from "../adapter/katex";
 import type { CellAddress } from "../model/diagram";
-import { createArrow } from "../model/arrow";
-import type { DiagramArrow } from "../model/arrow";
+import { createArrow, createArrowOptions } from "../model/arrow";
+import type { ArrowOptions, DiagramArrow } from "../model/arrow";
 
 export interface ArrowDeclaration extends FormulaNode {
   type: "tikzcdArrow";
   endpoints: Partial<Record<"source" | "target", ArrowPosition>>;
+  label?: FormulaNode[];
+  options: ArrowOptions;
   token?: Token;
 }
 
@@ -15,6 +17,18 @@ export interface ArrowDeclaration extends FormulaNode {
 type ArrowPosition =
   | { kind: "absolute"; address: CellAddress }
   | { kind: "relative"; offset: CellAddress };
+
+function resolve(origin: CellAddress, position?: ArrowPosition): CellAddress {
+  if (position?.kind === "absolute") {
+    return position.address;
+  }
+  else {
+    return {
+      row: origin.row + (position?.offset.row ?? 0),
+      column: origin.column + (position?.offset.column ?? 0),
+    };
+  }
+}
 
 /**
  * 解析目标位置
@@ -62,30 +76,95 @@ export function parseArrow(
   if (!declarations) throw new ParseError("\\arrow is only allowed in tikzcd", token);
 
   const declaration: ArrowDeclaration = {
-    type: "tikzcdArrow", mode: parser.mode, endpoints: {}, token,
+    type: "tikzcdArrow", mode: parser.mode, endpoints: {}, options: createArrowOptions(), token,
   };
-  for (const option of readArrowOptions(parser, ParseError)) {
-    parseArrowOption(option, declaration, ParseError);
-  }
+  readArrowOptions(parser, declaration, ParseError);
   declarations.push(declaration);
   return declaration;
 }
 
-/** 读取方括号内以逗号分隔的选项 */
-function readArrowOptions(parser: Parser, ParseError: typeof katex.ParseError): string[] {
+/** 读取选项 */
+function readArrowOptions(parser: Parser, declaration: ArrowDeclaration, ParseError: typeof katex.ParseError): void {
   while (parser.fetch().text === " ") parser.consume();
   parser.expect("[");
-  let options = "";
-  while (parser.fetch().text !== "]") {
-    const next = parser.fetch();
-    if (["EOF", "\\end", "&", "\\\\", "}", "{"].includes(next.text)) {
-      throw new ParseError("Expected ] in \\arrow options", next);
+  while (true) {
+    while (parser.fetch().text === " ") parser.consume();
+    if (parser.fetch().text === '"') {
+      parseLabel(parser, declaration, ParseError);
+    } else {
+      let option = "";
+      while (![",", "]"].includes(parser.fetch().text)) {
+        const next = parser.fetch();
+        if (["EOF", "\\end", "&", "\\\\", "}", "{", '"'].includes(next.text)) {
+          throw new ParseError("Expected , or ] in \\arrow options", next);
+        }
+        option += next.text;
+        parser.consume();
+      }
+      parseArrowOption(option.trim(), declaration, ParseError);
     }
-    options += next.text;
+    while (parser.fetch().text === " ") parser.consume();
+    if (parser.fetch().text === "]") {
+      parser.consume();
+      return;
+    }
+    parser.expect(",");
+  }
+}
+
+/** 解析标签 */
+function parseLabel(parser: Parser, declaration: ArrowDeclaration, ParseError: typeof katex.ParseError): void {
+  const token = parser.fetch();
+  if (declaration.label) throw new ParseError("Only one label per \\arrow is supported", token);
+  parser.consume();
+  parser.gullet.beginGroup();
+  try {
+    declaration.label = parser.parseExpression(false, '"');
+    parser.expect('"');
+  } finally {
+    parser.gullet.endGroup();
+  }
+  while (parser.fetch().text === " ") parser.consume();
+  while (parser.fetch().text === "'") {
+    parseLabelOption("swap", declaration.options);
     parser.consume();
   }
+  while (parser.fetch().text === " ") parser.consume();
+  if (parser.fetch().text !== "{") return;
   parser.consume();
-  return options.split(",").map(option => option.trim());
+  let option = "";
+  while (true) {
+    const next = parser.fetch();
+    if (["EOF", "\\end", "&", "\\\\", "]", "{", '"'].includes(next.text)) {
+      throw new ParseError("Expected } in \\arrow label options", next);
+    }
+    if (next.text === "," || next.text === "}") {
+      parseLabelOption(option.trim(), declaration.options);
+      option = "";
+      parser.consume();
+      if (next.text === "}") return;
+    } else {
+      option += next.text;
+      parser.consume();
+    }
+  }
+}
+
+/**
+ * 应用标签对齐选项
+ *
+ * @param option 单个标签选项，亦可出现在箭头选项列表中
+ * @param options 接收解析结果的箭头选项
+ */
+function parseLabelOption(option: string, options: ArrowOptions): void {
+  switch (option) {
+    case "description": options.label_alignment = "centre"; break;
+    case "marking": options.label_alignment = "over"; break;
+    case "swap":
+      if (options.label_alignment === "left") options.label_alignment = "right";
+      else if (options.label_alignment === "right") options.label_alignment = "left";
+      break;
+  }
 }
 
 /**
@@ -99,7 +178,7 @@ function parseArrowOption(
   option: string, declaration: ArrowDeclaration, ParseError: typeof katex.ParseError,
 ): void {
   const assignment = /^([^=]+)\s*=\s*(.*)$/.exec(option);
-  const key = assignment ? assignment[1]!.trim() : "to";
+  const key = assignment ? assignment[1]!.trim() : /^[rdlu]+$/.test(option) ? "to" : option;
   const value = assignment ? assignment[2]!.trim() : option;
   switch (key) {
     case "from":
@@ -110,16 +189,14 @@ function parseArrowOption(
       return;
     }
   }
+  parseLabelOption(option, declaration.options);
 }
 
 /** 将端点位置归一化为绝对位置 */
-export function resolveArrow(declaration: ArrowDeclaration, origin: CellAddress): DiagramArrow {
-  const resolve = (position?: ArrowPosition): CellAddress => {
-    if (position?.kind === "absolute") return position.address;
-    return {
-      row: origin.row + (position?.offset.row ?? 0),
-      column: origin.column + (position?.offset.column ?? 0),
-    };
-  };
-  return createArrow(resolve(declaration.endpoints.source), resolve(declaration.endpoints.target));
+export function resolveArrow(declaration: ArrowDeclaration, origin: CellAddress): DiagramArrow<FormulaNode[]> {
+  return createArrow(
+    resolve(origin, declaration.endpoints.source),
+    resolve(origin, declaration.endpoints.target),
+    declaration.label ?? [], declaration.options,
+  );
 }
