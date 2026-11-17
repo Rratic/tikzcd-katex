@@ -1,10 +1,16 @@
 {
   "name": "tikzcd-katex",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "A minimal tikzcd extension for KaTeX.",
+  "license": "MIT",
+  "files": [
+    "dist/"
+  ],
+  "jsdelivr": "dist/tikzcd-katex.min.js",
   "scripts": {
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": ">=22.18.0"
