@@ -28,6 +28,10 @@
 ```
 
 ## API
+以如下方式安装到 KaTeX 实例中：
+
 ```js
 TikzcdKaTeX.installTikzcd(katex);
 ```
+
+之后可以调用 `katex.render`，但不支持 `katex.renderToString`，因为需要在 DOM 中操作。且 `katex.render` 强制为 `string` 模式，不提供对应的 MathML 标记。

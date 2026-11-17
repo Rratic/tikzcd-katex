@@ -2,11 +2,12 @@ import type katex from "katex";
 import type { Token } from "katex";
 import type { InternalKatex } from "./katex";
 import { parseDiagram } from "../parser/diagram";
-import { renderGrid } from "../render/grid";
+import { gridBuilder, renderGrid } from "../render/grid";
+import { parseArrow } from "../parser/arrow";
 
 const ENVIRONMENT_COMMAND = "\\tikzcdInternal";
 
-/** 将 tikzcd 接入独立解析器 */
+/** 注册 tikzcd 环境、箭头命令及构建器 */
 export function registerTikzcdEnvironment(instance: typeof katex): void {
   // 转化为暴露接口的版本
   const internal = instance as InternalKatex;
@@ -15,15 +16,22 @@ export function registerTikzcdEnvironment(instance: typeof katex): void {
       throw new Error("KaTeX " + hook + " is unavailable");
     }
   }
+  if (typeof internal.__domTree?.Span !== "function") {
+    throw new Error("KaTeX __domTree.Span is unavailable");
+  }
 
   // 注册 tikzcd 功能
   internal.__defineFunction({
-    type: "array",
+    type: "tikzcd",
     names: [ENVIRONMENT_COMMAND],
     numArgs: 0,
     handler({ parser }) {
-      return renderGrid(parseDiagram(parser, instance.ParseError), parser.mode);
+      // 强制指定不生成 MathML
+      parser.settings.output = "html";
+      const diagram = parseDiagram(parser, instance.ParseError);
+      return renderGrid(diagram, parser.mode);
     },
+    htmlBuilder: gridBuilder(internal.__domTree.Span),
   });
 
   // 注入 `\begin` 命令
@@ -49,5 +57,13 @@ export function registerTikzcdEnvironment(instance: typeof katex): void {
       ],
       numArgs: 0,
     };
+  });
+
+  // 注册 `\arrow` 命令
+  internal.__defineFunction({
+    type: "tikzcdArrow",
+    names: ["\\arrow"],
+    numArgs: 0,
+    handler: ({ parser, token }) => parseArrow(parser, instance.ParseError, token),
   });
 }

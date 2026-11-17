@@ -1,5 +1,6 @@
 import type katex from "katex";
 import { registerTikzcdEnvironment } from "./adapter/environment";
+import { renderDiagrams } from "./render/diagram";
 
 const installed = new WeakSet<object>();
 
@@ -9,5 +10,13 @@ export function installTikzcd(instance: typeof katex): void {
   if (installed.has(instance)) return;
 
   registerTikzcdEnvironment(instance);
+
+  // 补充独立渲染
+  const render = instance.render;
+  instance.render = (expression, base, options) => {
+    render.call(instance, expression, base, options);
+    renderDiagrams(base);
+  };
+
   installed.add(instance);
 }
