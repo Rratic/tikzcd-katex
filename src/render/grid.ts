@@ -113,7 +113,7 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
     root.depth = layout.depth;
     root.maxFontSize = Math.max(options.sizeMultiplier, ...native.flat().map(cell => cell.maxFontSize));
     root.setAttribute("data-tikzcd", JSON.stringify(diagram.arrows.map(({ source, target, label, options }) => ({
-      source, target,
+      source, target, style: options.style,
       ...(label.length ? { label_alignment: options.label_alignment, label_position: options.label_position } : {}),
     }))));
     root.setAttribute("data-tikzcd-layout", JSON.stringify({

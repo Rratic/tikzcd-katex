@@ -10,6 +10,7 @@ const SVG = "http://www.w3.org/2000/svg";
 let nextDiagramId = 0;
 
 type MountedArrow = Pick<DiagramArrow, "source" | "target">
+  & Pick<ArrowOptions, "style">
   & Partial<Pick<ArrowOptions, "label_alignment" | "label_position">>;
 
 interface MountedDiagram {
@@ -126,11 +127,19 @@ function renderDiagram(diagram: MountedDiagram): void {
       const geometry = layoutArrow(boxes.get(addressKey(arrow.source))!, boxes.get(addressKey(arrow.target))!, em);
       const label = labels.get(index);
       const labelBox = label ? positionLabel(label, geometry, arrow, em) : undefined;
-      const path = document.createElementNS(SVG, "path");
-      // KaTeX CSS 默认设置 .katex svg path { stroke: none }。
-      path.style.cssText = "fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round";
-      path.setAttribute("d", geometry.path);
-      path.setAttribute("stroke-width", String(geometry.strokeWidth));
+      const group = document.createElementNS(SVG, "g");
+      group.setAttribute("stroke-width", String(geometry.strokeWidth));
+      for (const part of ["body", "head"] as const) {
+        const path = document.createElementNS(SVG, "path");
+        // KaTeX CSS 默认设置 .katex svg path { stroke: none }
+        path.style.cssText = "fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round";
+        path.setAttribute("d", geometry[part]);
+        // 让箭身使用虚线
+        if (part === "body" && arrow.style.dash === "dashed") {
+          path.setAttribute("stroke-dasharray", em * 0.3 + " " + em * 0.2);
+        }
+        group.appendChild(path);
+      }
       if (labelBox && arrow.label_alignment === "centre") {
         // 只裁剪此箭头，避免依赖页面背景色或遮住交叉的其他箭头。
         const mask = document.createElementNS(SVG, "mask");
@@ -154,9 +163,9 @@ function renderDiagram(diagram: MountedDiagram): void {
           mask.appendChild(rect);
         }
         defs.appendChild(mask);
-        path.setAttribute("mask", "url(#" + id + ")");
+        group.setAttribute("mask", "url(#" + id + ")");
       }
-      return path;
+      return group;
     });
     svg.setAttribute("viewBox", "0 0 " + width + " " + height);
     svg.replaceChildren(...(defs.childNodes.length ? [defs] : []), ...paths);

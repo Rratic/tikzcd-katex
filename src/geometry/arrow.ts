@@ -101,19 +101,20 @@ export function layoutArrow(from: CellBox, to: CellBox, em: number) {
   const tip = curve.point(curve.t_after_length(endLength));
 
   // 中间部分直线
-  const path = new Path().move_to(start).line_by(tip.sub(start));
+  const body = new Path().move_to(start).line_by(tip.sub(start));
 
   // 在终点向后绘制两段椭圆弧
+  const head = new Path();
   const wingA = new Point(-headWidth, -headHeight / 2).rotate(curve.angle);
   const wingB = new Point(-headWidth, headHeight / 2).rotate(curve.angle);
   const radius = new Point(headWidth, headHeight / 2);
   const degrees = curve.angle * 180 / Math.PI;
-  path.move_to(tip).arc_by(radius, degrees, false, true, wingA);
-  path.move_to(tip).arc_by(radius, degrees, false, false, wingB);
+  head.move_to(tip).arc_by(radius, degrees, false, true, wingA);
+  head.move_to(tip).arc_by(radius, degrees, false, false, wingB);
   return {
     start, tip,
-    head: [tip.add(wingA), tip, tip.add(wingB)],
-    path: path.toString(),
+    body: body.toString(),
+    head: head.toString(),
     strokeWidth: em * 0.04,
   };
 }

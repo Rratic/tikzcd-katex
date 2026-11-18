@@ -144,6 +144,10 @@ function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration): v
   }
 
   // 处理普通配置
+  if (option.key === "dashed" && option.value === undefined) {
+    declaration.options.style.dash = "dashed";
+    return;
+  }
   applyLabelOption(option, declaration.options);
 }
 

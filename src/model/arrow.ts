@@ -3,12 +3,28 @@
 import type { CellAddress } from "./diagram";
 import type { NamedOption } from "../parser/options";
 
+/////////////////////////////
+/// 箭头的样式
+/////////////////////////////
+
+export type ArrowBodyStyle = "line";
+
+/** 附加在 `ArrowBodyStyle` 上的作用 */
+export type ArrowDashStyle = "solid" | "dashed";
+
+/** 箭头端点的样式，适用于两端 */
+export type ArrowEndStyle =
+  // 无
+  "none" |
+  // 正常箭头
+  "normal";
+
 /** 箭头的头部、主体和尾部样式 */
 export interface ArrowOptionsStyle {
-  name: "arrow";
-  tail: { name: "none" };
-  body: { name: "cell" };
-  head: { name: "arrowhead" };
+  body: ArrowBodyStyle,
+  dash: ArrowDashStyle,
+  head: ArrowEndStyle,
+  tail: ArrowEndStyle
 }
 
 /** 箭头的所有选项 */
@@ -78,10 +94,10 @@ export function createArrowOptions(): ArrowOptions {
     shape: "bezier",
     edge_alignment: { source: true, target: true },
     style: {
-      name: "arrow",
-      tail: { name: "none" },
-      body: { name: "cell" },
-      head: { name: "arrowhead" },
+      body: "line",
+      dash: "solid",
+      head: "normal",
+      tail: "none",
     },
   };
 }
