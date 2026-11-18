@@ -13,7 +13,7 @@ const SVG = "http://www.w3.org/2000/svg";
 let nextDiagramId = 0;
 
 type MountedArrow = Pick<DiagramArrow, "source" | "target">
-  & Pick<ArrowOptions, "style">
+  & Pick<ArrowOptions, "style" | "phantom">
   & { labels: LabelStyle[] };
 
 interface MountedDiagram {
@@ -86,7 +86,7 @@ function renderDiagram(diagram: MountedDiagram): void {
   }
   try {
     const defs = document.createElementNS(SVG, "defs");
-    const paths = arrows.map((arrow, index) => {
+    const paths = arrows.flatMap((arrow, index) => {
       const geometry = layoutArrow(boxes.get(addressKey(arrow.source))!, boxes.get(addressKey(arrow.target))!, em);
       const arrowLabels = arrow.labels.flatMap((style, labelIndex) => {
         const element = labels.get(index + ":" + labelIndex);
@@ -95,12 +95,13 @@ function renderDiagram(diagram: MountedDiagram): void {
       const mask = renderLabels(document, arrowLabels, geometry, em, {
         id: "tikzcd-label-" + diagram.id + "-" + index, width, height,
       });
+      if (arrow.phantom) return [];
       const group = drawArrow(document, geometry, arrow.style, em);
       if (mask) {
         defs.appendChild(mask);
         group.setAttribute("mask", "url(#" + mask.id + ")");
       }
-      return group;
+      return [group];
     });
     svg.setAttribute("viewBox", "0 0 " + width + " " + height);
     svg.replaceChildren(...(defs.childNodes.length ? [defs] : []), ...paths);

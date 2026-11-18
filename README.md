@@ -155,3 +155,13 @@ TikzcdKaTeX.setTikzcdStyle({
 	& {X_2}
 \end{tikzcd}
 ```
+
+`phantom` 命令会隐藏箭头，并让标签使用正文大小：
+
+```tex
+\begin{tikzcd}
+  A \arrow[r] \arrow[d] \arrow[dr, phantom, "\ulcorner", very near start]
+    & B \arrow[d] \\
+  C \arrow[r] & D
+\end{tikzcd}
+```

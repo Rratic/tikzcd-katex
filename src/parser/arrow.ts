@@ -88,14 +88,17 @@ export function parseArrow(
   const declaration: ArrowDeclaration = {
     type: "tikzcdArrow", mode: parser.mode, endpoints: {}, labels: [], options: createArrowOptions(), token,
   };
+
+  // 配置箭头
+  for (const parameter of parameters) {
+    if (parameter.type === "option") applyArrowOption(parameter, declaration);
+  }
   const labelStyle = createLabel().style;
+  if (declaration.options.phantom) labelStyle.alignment = "center";
 
   // 箭头层的标签选项作为每个标签的共同配置
   for (const parameter of parameters) {
-    if (parameter.type === "option") {
-      applyArrowOption(parameter, declaration);
-      applyLabelOption(labelStyle, parameter);
-    }
+    if (parameter.type === "option") applyLabelOption(labelStyle, parameter);
   }
   for (const parameter of parameters) {
     if (parameter.type !== "quoted") continue;
@@ -155,6 +158,12 @@ function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration): v
   }
   if (option.key === "to") {
     declaration.endpoints["target"] = parse_absolute_position(option.value!);
+    return;
+  }
+
+  // 单独处理 phantom 模式
+  if (option.key === "phantom") {
+    declaration.options.phantom = true;
     return;
   }
 

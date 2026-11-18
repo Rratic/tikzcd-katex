@@ -199,6 +199,9 @@ export function createLabel(): DiagramLabel {
 
 /** 箭头的所有选项 */
 export interface ArrowOptions {
+  /** Phantom 模式 */
+  phantom: boolean;
+
   /** 平移 */
   offset: number;
 
@@ -241,6 +244,7 @@ export interface DiagramArrow {
 /** 创建默认箭头选项 */
 export function createArrowOptions(): ArrowOptions {
   return {
+    phantom: false,
     offset: 0,
     curve: 0,
     radius: 3,

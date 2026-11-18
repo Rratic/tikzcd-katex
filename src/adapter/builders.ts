@@ -7,7 +7,7 @@ import type { BuildOptions, CellBuilders, FormulaNode, HtmlNode } from "./katex"
  * @param content 已由 KaTeX 解析的单元格公式节点
  * @param mode 单元格所在的解析模式
  * @param options 外层公式的构建选项
- * @param style 单元格使用 text，箭头标签使用 script
+ * @param style 字体大小的样式
  * @returns 公式的 HTML 虚拟节点
  */
 export function buildCell(

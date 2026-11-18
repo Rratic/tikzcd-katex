@@ -85,7 +85,7 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
 
     const labels = diagram.arrows.flatMap((arrow, index) => arrow.labels.flatMap((content, labelIndex) => {
       if (!content.nodes.length) return [];
-      const formula = buildCell(this, content.nodes, mode, options, "script");
+      const formula = buildCell(this, content.nodes, mode, options, arrow.options.phantom ? "text" : "script");
       const strut = new Span([], [], undefined, {
         display: "inline-block", width: "0", height: em(formula.height + formula.depth),
         verticalAlign: em(-formula.depth),
@@ -113,7 +113,7 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
     root.depth = layout.depth;
     root.maxFontSize = Math.max(options.sizeMultiplier, ...native.flat().map(cell => cell.maxFontSize));
     root.setAttribute("data-tikzcd", JSON.stringify(diagram.arrows.map(({ source, target, labels, options }) => ({
-      source, target, style: options.style,
+      source, target, style: options.style, phantom: options.phantom,
       labels: labels.map(label => label.style),
     }))));
     root.setAttribute("data-tikzcd-layout", JSON.stringify({
