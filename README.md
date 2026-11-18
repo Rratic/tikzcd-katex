@@ -126,7 +126,7 @@ TikzcdKaTeX.setTikzcdStyle({
 箭头支持的设置项如下：
 
 | 设置项 | 效果 |
-| :---： | :-: |
+| :---: | :---: |
 | `dashed` | 设置箭身为虚线 |
 | `to head` | 设置箭头为正常 |
 | `rightarrow` | 正常箭头 |
