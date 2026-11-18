@@ -83,9 +83,9 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
       display: "block", position: "relative", height: "0",
     });
 
-    const labels = diagram.arrows.flatMap((arrow, index) => {
-      if (!arrow.label.length) return [];
-      const formula = buildCell(this, arrow.label, mode, options, "script");
+    const labels = diagram.arrows.flatMap((arrow, index) => arrow.labels.flatMap((content, labelIndex) => {
+      if (!content.nodes.length) return [];
+      const formula = buildCell(this, content.nodes, mode, options, "script");
       const strut = new Span([], [], undefined, {
         display: "inline-block", width: "0", height: em(formula.height + formula.depth),
         verticalAlign: em(-formula.depth),
@@ -95,9 +95,9 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
         width: "max-content", height: em(formula.height + formula.depth),
         visibility: "hidden", pointerEvents: "none", zIndex: "1",
       });
-      label.setAttribute("data-tikzcd-label", String(index));
+      label.setAttribute("data-tikzcd-label", index + ":" + labelIndex);
       return [label];
-    });
+    }));
 
     // 独立的基线支撑
     const baseline = new Span([], [], undefined, {
@@ -112,9 +112,9 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
     root.height = layout.height;
     root.depth = layout.depth;
     root.maxFontSize = Math.max(options.sizeMultiplier, ...native.flat().map(cell => cell.maxFontSize));
-    root.setAttribute("data-tikzcd", JSON.stringify(diagram.arrows.map(({ source, target, label, options }) => ({
+    root.setAttribute("data-tikzcd", JSON.stringify(diagram.arrows.map(({ source, target, labels, options }) => ({
       source, target, style: options.style,
-      ...(label.length ? { label_alignment: options.label_alignment, label_position: options.label_position } : {}),
+      labels: labels.map(label => label.style),
     }))));
     root.setAttribute("data-tikzcd-layout", JSON.stringify({
       rows: metrics, settings, cellAxis: textOptions.fontMetrics().axisHeight * scale,

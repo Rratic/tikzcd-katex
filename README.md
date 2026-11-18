@@ -82,20 +82,33 @@ TikzcdKaTeX.setTikzcdStyle({
 \end{tikzcd}
 ```
 
-用 `"math"` 在箭头上添加标签。标签默认在箭头行进方向的左侧，可以在第二个双引号后加 `'` 或用 `swap` 选项将它放在另一侧：
+用 `"math"` 在箭头上添加一个或多个标签。标签默认在箭头行进方向的左侧，可以在第二个双引号后加 `'` 将它放在另一侧：
 
 ```tex
 \begin{tikzcd}
-  A \arrow[r, "f_i"] \arrow[d, "g"'] & B \arrow[d, "\frac{h}{k}"] \\
-  C \arrow[r, "q", swap] & D
+  A \arrow[r, "f", "g"'] & B
 \end{tikzcd}
 ```
 
-在标签后加 `description` 会将标签水平放在箭头中央，并留出空隙；加 `marking` 则会直接覆盖在箭头上：
+标签支持的设置项如下：
+| 设置项 | 效果 |
+| :---: | :--: |
+| `swap` | 同加 `'`，放在箭头行进方向的右侧 |
+| `description` | 放在箭头中央，并部分遮盖箭头 |
+| `marking` | 放在箭头中央，并旋转至平行于箭头方向 |
+| `pos=x` | 设置在箭头行进方向位置 |
+| `at start` | 设置 `pos` 为 0 |
+| `very near start` | 设置 `pos` 为 0.125 |
+| `near start` | 设置 `pos` 为 0.25 |
+| `midway` | 设置 `pos` 为 0.5 |
+| `near end` | 设置 `pos` 为 0.75 |
+| `very near end` | 设置 `pos` 为 0.875 |
+| `at end` | 设置 `pos` 为 1 |
+
+使用示例如下：
 
 ```tex
 \begin{tikzcd}
-  A \arrow[r, "f" description] & B \\
-  C \arrow[r, "g" marking] & D
+  A \arrow[r, "p" pos=0.25, "q" {swap, pos=0.75}] & B
 \end{tikzcd}
 ```

@@ -1,7 +1,7 @@
 import { layoutArrow } from "../geometry/arrow";
 import type { CellBox } from "../geometry/arrow";
 import { addressKey } from "../model/diagram";
-import type { ArrowOptions, DiagramArrow } from "../model/arrow";
+import type { ArrowOptions, DiagramArrow, LabelStyle } from "../model/arrow";
 import { layoutGrid } from "../layout/grid";
 import type { CellMetrics, GridSettings } from "../layout/grid";
 
@@ -11,14 +11,14 @@ let nextDiagramId = 0;
 
 type MountedArrow = Pick<DiagramArrow, "source" | "target">
   & Pick<ArrowOptions, "style">
-  & Partial<Pick<ArrowOptions, "label_alignment" | "label_position">>;
+  & { labels: LabelStyle[] };
 
 interface MountedDiagram {
   id: number;
   root: HTMLElement;
   cells: HTMLElement[];
   arrows: MountedArrow[];
-  labels: Map<number, HTMLElement>;
+  labels: Map<string, HTMLElement>;
   svg?: SVGSVGElement;
   grid: HTMLElement;
   metrics: { rows: CellMetrics[][]; settings: GridSettings; cellAxis: number };
@@ -56,26 +56,25 @@ function unit_px(value: number): string {
  *
  * @param label 已由 KaTeX 构建并挂载的标签 DOM
  * @param geometry 裁剪后的箭头
- * @param arrow 标签所在侧和沿箭头的位置
+ * @param labelStyle 标签的对齐、位置和旋转样式
  * @param em 当前图式的字号，单位为 CSS 像素
- * @returns 旋转前的标签包围盒，用于为 centre 模式裁剪箭线
+ * @returns 旋转前的标签包围盒，用于裁剪箭线
  */
-function positionLabel(label: HTMLElement, geometry: ReturnType<typeof layoutArrow>, arrow: MountedArrow, em: number): CellBox {
+function positionLabel(label: HTMLElement, geometry: ReturnType<typeof layoutArrow>, labelStyle: LabelStyle, em: number): CellBox {
   const { start, tip } = geometry;
   const dx = tip.x - start.x, dy = tip.y - start.y;
   const length = Math.hypot(dx, dy);
-  const centred = arrow.label_alignment === "centre" || arrow.label_alignment === "over";
-  const side = centred ? 0 : arrow.label_alignment === "right" ? -1 : 1;
+  const side = labelStyle.alignment === "center" ? 0 : labelStyle.alignment === "swap" ? -1 : 1;
   const nx = side * dy / length, ny = -side * dx / length;
   const style = label.ownerDocument.defaultView!.getComputedStyle(label);
   const width = parseFloat(style.width), height = parseFloat(style.height);
-  const distance = (Math.abs(nx) * width + Math.abs(ny) * height) / 2 + em * 0.12;
-  const position = (arrow.label_position ?? 50) / 100;
+  const distance = (labelStyle.sloped ? height : Math.abs(nx) * width + Math.abs(ny) * height) / 2 + em * 0.12;
+  const position = labelStyle.pos;
   const x = start.x + dx * position + nx * distance - width / 2;
   const y = start.y + dy * position + ny * distance - height / 2;
   setStyle(label, "left", unit_px(x));
   setStyle(label, "top", unit_px(y));
-  setStyle(label, "transform", arrow.label_alignment === "over" ? "rotate(" + Math.atan2(dy, dx) + "rad)" : "none");
+  setStyle(label, "transform", labelStyle.sloped ? "rotate(" + Math.atan2(dy, dx) + "rad)" : "none");
   setStyle(label, "visibility", "visible");
   return { x, y, width, height };
 }
@@ -125,8 +124,13 @@ function renderDiagram(diagram: MountedDiagram): void {
     const defs = document.createElementNS(SVG, "defs");
     const paths = arrows.map((arrow, index) => {
       const geometry = layoutArrow(boxes.get(addressKey(arrow.source))!, boxes.get(addressKey(arrow.target))!, em);
-      const label = labels.get(index);
-      const labelBox = label ? positionLabel(label, geometry, arrow, em) : undefined;
+      const masked: { box: CellBox; sloped: boolean }[] = [];
+      for (const [labelIndex, style] of arrow.labels.entries()) {
+        const label = labels.get(index + ":" + labelIndex);
+        if (!label) continue;
+        const box = positionLabel(label, geometry, style, em);
+        if (style.mask) masked.push({ box, sloped: style.sloped });
+      }
       const group = document.createElementNS(SVG, "g");
       group.setAttribute("stroke-width", String(geometry.strokeWidth));
       for (const part of ["body", "head"] as const) {
@@ -140,8 +144,8 @@ function renderDiagram(diagram: MountedDiagram): void {
         }
         group.appendChild(path);
       }
-      if (labelBox && arrow.label_alignment === "centre") {
-        // 只裁剪此箭头，避免依赖页面背景色或遮住交叉的其他箭头。
+      if (masked.length) {
+        // 只裁剪此箭头，避免依赖页面背景色或遮住交叉的其他箭头
         const mask = document.createElementNS(SVG, "mask");
         const id = "tikzcd-label-" + diagram.id + "-" + index;
         mask.id = id;
@@ -150,16 +154,25 @@ function renderDiagram(diagram: MountedDiagram): void {
         mask.setAttribute("y", String(-em));
         mask.setAttribute("width", String(width + 2 * em));
         mask.setAttribute("height", String(height + 2 * em));
-        for (const [box, fill] of [
-          [{ x: -em, y: -em, width: width + 2 * em, height: height + 2 * em }, "white"],
-          [{
-            x: labelBox.x - em * 0.12, y: labelBox.y - em * 0.12,
-            width: labelBox.width + em * 0.24, height: labelBox.height + em * 0.24
-          }, "black"],
-        ] as const) {
+        const background = document.createElementNS(SVG, "rect");
+        background.setAttribute("x", String(-em));
+        background.setAttribute("y", String(-em));
+        background.setAttribute("width", String(width + 2 * em));
+        background.setAttribute("height", String(height + 2 * em));
+        background.style.fill = "white";
+        mask.appendChild(background);
+        // 同一箭头的所有遮挡区域共享一个 mask，避免后一个标签覆盖前一个
+        for (const { box, sloped } of masked) {
           const rect = document.createElementNS(SVG, "rect");
-          for (const key of ["x", "y", "width", "height"] as const) rect.setAttribute(key, String(box[key]));
-          rect.style.fill = fill;
+          rect.setAttribute("x", String(box.x - em * 0.12));
+          rect.setAttribute("y", String(box.y - em * 0.12));
+          rect.setAttribute("width", String(box.width + em * 0.24));
+          rect.setAttribute("height", String(box.height + em * 0.24));
+          if (sloped) {
+            const angle = Math.atan2(geometry.tip.y - geometry.start.y, geometry.tip.x - geometry.start.x) * 180 / Math.PI;
+            rect.setAttribute("transform", "rotate(" + angle + " " + (box.x + box.width / 2) + " " + (box.y + box.height / 2) + ")");
+          }
+          rect.style.fill = "black";
           mask.appendChild(rect);
         }
         defs.appendChild(mask);
@@ -233,7 +246,7 @@ function createManager(document: Document) {
       const arrows = JSON.parse(root.dataset.tikzcd!) as MountedArrow[];
       const labels = new Map([...root.querySelectorAll<HTMLElement>("[data-tikzcd-label]")]
         .filter(label => label.closest(ROOT) === root)
-        .map(label => [Number(label.dataset.tikzcdLabel), label] as const));
+        .map(label => [label.dataset.tikzcdLabel!, label] as const));
       let svg: SVGSVGElement | undefined;
       if (arrows.length) {
         svg = document.createElementNS(SVG, "svg");

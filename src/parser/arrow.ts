@@ -2,15 +2,15 @@ import type katex from "katex";
 import type { Token } from "katex";
 import type { FormulaNode, Parser } from "../adapter/katex";
 import type { CellAddress } from "../model/diagram";
-import { applyLabelOption, createArrow, createArrowOptions } from "../model/arrow";
-import type { ArrowOptions, DiagramArrow } from "../model/arrow";
+import { applyLabelOption, applyStyleOption, createArrow, createArrowOptions, createLabel } from "../model/arrow";
+import type { ArrowOptions, DiagramArrow, DiagramLabel } from "../model/arrow";
 import { OptionsSyntaxError, parseOptions } from "./options";
 import type { NamedOption, Option, OptionToken } from "./options";
 
 export interface ArrowDeclaration extends FormulaNode {
   type: "tikzcdArrow";
   endpoints: Partial<Record<"source" | "target", ArrowPosition>>;
-  label?: FormulaNode[];
+  labels: DiagramLabel[];
   options: ArrowOptions;
   token?: Token;
 }
@@ -74,7 +74,7 @@ export function parseArrow(
   const declarations = arrowContexts.get(parser);
   if (!declarations) throw new ParseError("\\arrow is only allowed in tikzcd", token);
 
-  let parameters: Option<FormulaNode[]>[];
+  let parameters: Option<DiagramLabel>[];
   try {
     parameters = parseOptions(readOptionTokens(parser));
   } catch (error) {
@@ -86,25 +86,36 @@ export function parseArrow(
 
   // 按顺序应用到箭头声明
   const declaration: ArrowDeclaration = {
-    type: "tikzcdArrow", mode: parser.mode, endpoints: {}, options: createArrowOptions(), token,
+    type: "tikzcdArrow", mode: parser.mode, endpoints: {}, labels: [], options: createArrowOptions(), token,
   };
+  const labelStyle = createLabel().style;
+
+  // 箭头层的标签选项作为每个标签的共同配置
   for (const parameter of parameters) {
     if (parameter.type === "option") {
       applyArrowOption(parameter, declaration);
-    } else {
-      if (declaration.label) throw new ParseError("Only one label per \\arrow is supported", token);
-      declaration.label = parameter.value;
-      for (let prime = 0; prime < parameter.primes; prime++) {
-        applyLabelOption({ type: "option", key: "swap" }, declaration.options);
-      }
-      for (const option of parameter.options) applyLabelOption(option, declaration.options);
+      applyLabelOption(labelStyle, parameter);
     }
+  }
+  for (const parameter of parameters) {
+    if (parameter.type !== "quoted") continue;
+    const label = parameter.value;
+    label.style = { ...labelStyle };
+    if (parameter.primes) applyLabelOption(label.style, { type: "option", key: "swap" });
+    for (const option of parameter.options) applyLabelOption(label.style, option);
+    declaration.labels.push(label);
   }
   declarations.push(declaration);
   return declaration;
 }
 
-function* readOptionTokens(parser: Parser): Generator<OptionToken<FormulaNode[]>> {
+/**
+ * 读取箭头选项，将引号内的公式交给 KaTeX 解析并保留源码
+ *
+ * @param parser 已消费 `\arrow` 的 KaTeX 解析器
+ * @returns 字符串选项 token 和包含公式节点的标签对象
+ */
+function* readOptionTokens(parser: Parser): Generator<OptionToken<DiagramLabel>> {
   while (true) {
     const token = parser.fetch();
     if (["EOF", "\\end", "&", "\\\\"].includes(token.text)) return;
@@ -113,10 +124,14 @@ function* readOptionTokens(parser: Parser): Generator<OptionToken<FormulaNode[]>
       yield token.text;
     } else {
       parser.gullet.beginGroup();
-      let value: FormulaNode[];
+      const value = createLabel();
       try {
-        value = parser.parseExpression(false, '"');
+        value.nodes = parser.parseExpression(false, '"');
+        const end = parser.fetch();
         parser.expect('"');
+        if (token.loc && end.loc && token.loc.lexer === end.loc.lexer) {
+          value.literal = token.loc.lexer.input.slice(token.loc.end, end.loc.start);
+        }
       } finally {
         parser.gullet.endGroup();
       }
@@ -144,18 +159,16 @@ function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration): v
   }
 
   // 处理普通配置
-  if (option.key === "dashed" && option.value === undefined) {
-    declaration.options.style.dash = "dashed";
-    return;
-  }
-  applyLabelOption(option, declaration.options);
+  applyStyleOption(declaration.options.style, option);
 }
 
 /** 将端点位置归一化为绝对位置 */
-export function resolveArrow(declaration: ArrowDeclaration, origin: CellAddress): DiagramArrow<FormulaNode[]> {
-  return createArrow(
+export function resolveArrow(declaration: ArrowDeclaration, origin: CellAddress): DiagramArrow {
+  const arrow = createArrow(
     resolve(origin, declaration.endpoints.source),
     resolve(origin, declaration.endpoints.target),
-    declaration.label ?? [], declaration.options,
+    declaration.options,
   );
+  arrow.labels = declaration.labels;
+  return arrow;
 }

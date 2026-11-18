@@ -11,7 +11,7 @@ export interface DiagramCell<Formula> {
 export interface Diagram<Formula> {
   kind: "tikzcd";
   rows: DiagramCell<Formula>[][];
-  arrows: DiagramArrow<Formula>[];
+  arrows: DiagramArrow[];
 }
 
 /** 单元格在图表中的地址，以 0 为起始 */
