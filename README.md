@@ -95,6 +95,7 @@ TikzcdKaTeX.setTikzcdStyle({
 | 设置项 | 效果 |
 | :---: | :--: |
 | `swap` | 同加 `'`，放在箭头行进方向的右侧 |
+| `sloped` | 旋转至平行于箭头方向 |
 | `description` | 放在箭头中央，并部分遮盖箭头 |
 | `marking` | 放在箭头中央，并旋转至平行于箭头方向 |
 | `pos=x` | 设置在箭头行进方向位置 |
@@ -107,6 +108,15 @@ TikzcdKaTeX.setTikzcdStyle({
 | `at end` | 设置 `pos` 为 1 |
 
 使用示例如下：
+
+```tex
+\begin{tikzcd}
+  A \arrow[r, "f"]
+    \arrow[rd, "g \circ f", swap, sloped]
+  & B \arrow[d, "g"] \\
+  & C
+\end{tikzcd}
+```
 
 ```tex
 \begin{tikzcd}
@@ -156,7 +166,7 @@ TikzcdKaTeX.setTikzcdStyle({
 \end{tikzcd}
 ```
 
-`phantom` 命令会隐藏箭头，并让标签使用正文大小：
+`phantom` 命令会隐藏箭头，并让标签默认出在箭头中央，使用正文大小：
 
 ```tex
 \begin{tikzcd}
