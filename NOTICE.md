@@ -2,3 +2,5 @@
 
 - `src/geometry` 目录
 - `src/model/arrow.ts`
+- `src/render/arrow.ts`
+- `src/render/path.ts`

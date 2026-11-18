@@ -2,7 +2,6 @@
 
 import { Line } from "./curve";
 import type { CurvePoint } from "./curve";
-import { Path } from "./path";
 import { Point } from "./point";
 import { RoundedRectangle } from "./shape";
 
@@ -21,6 +20,14 @@ export interface CellBox {
   y: number;
   width: number;
   height: number;
+}
+
+/** 裁剪后的箭头几何信息，不包含端点样式或 SVG 路径 */
+export interface ArrowGeometry {
+  start: Point;
+  tip: Point;
+  angle: number;
+  length: number;
 }
 
 /**
@@ -73,15 +80,14 @@ function extendMargin(box: CellBox, em: number) {
 }
 
 /**
- * 生成基础直线箭头
+ * 计算直线箭头的端点
  *
  * @param from 起点内容框
  * @param to 终点内容框
  * @param em 当前环境 1em 对应长度
  */
-export function layoutArrow(from: CellBox, to: CellBox, em: number) {
+export function layoutArrow(from: CellBox, to: CellBox, em: number): ArrowGeometry {
   const padding = em * ARROW_PADDING;
-  const headWidth = em * 0.28, headHeight = em * 0.24;
   const source = extendMargin(from, em), target = extendMargin(to, em);
   const curve = new Line(source.centre, target.centre);
 
@@ -92,7 +98,7 @@ export function layoutArrow(from: CellBox, to: CellBox, em: number) {
   // 单独处理零大小
   if (source.empty()) startLength += padding;
   if (target.empty()) endLength += padding;
-  if (endLength - startLength < headWidth + em * 0.1) {
+  if (endLength <= startLength) {
     throw new RangeError("tikzcd arrow endpoints are too close");
   }
 
@@ -100,21 +106,7 @@ export function layoutArrow(from: CellBox, to: CellBox, em: number) {
   const start = curve.point(curve.t_after_length(startLength));
   const tip = curve.point(curve.t_after_length(endLength));
 
-  // 中间部分直线
-  const body = new Path().move_to(start).line_by(tip.sub(start));
-
-  // 在终点向后绘制两段椭圆弧
-  const head = new Path();
-  const wingA = new Point(-headWidth, -headHeight / 2).rotate(curve.angle);
-  const wingB = new Point(-headWidth, headHeight / 2).rotate(curve.angle);
-  const radius = new Point(headWidth, headHeight / 2);
-  const degrees = curve.angle * 180 / Math.PI;
-  head.move_to(tip).arc_by(radius, degrees, false, true, wingA);
-  head.move_to(tip).arc_by(radius, degrees, false, false, wingB);
   return {
-    start, tip,
-    body: body.toString(),
-    head: head.toString(),
-    strokeWidth: em * 0.04,
+    start, tip, angle: curve.angle, length: tip.sub(start).length(),
   };
 }

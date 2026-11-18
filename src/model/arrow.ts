@@ -8,17 +8,28 @@ import type { FormulaNode } from "../adapter/katex";
 /// 箭头的样式
 /////////////////////////////
 
-export type ArrowBodyStyle = "line";
+export type ArrowBodyStyle =
+  // 无边不作为一种箭体设置
+  // 正常直线 (-)
+  "line";
 
 /** 附加在 `ArrowBodyStyle` 上的作用 */
 export type ArrowDashStyle = "solid" | "dashed";
 
 /** 箭头端点的样式，适用于两端 */
 export type ArrowEndStyle =
-  // 无
+  // 无 (-)
   "none" |
-  // 正常箭头
-  "normal";
+  // 正常箭头 (→)
+  "normal" |
+  // 双头箭头 (↠)
+  "twohead" |
+  // 反转箭头 (⤚)
+  "tail" |
+  // 带杠箭头 (↦)
+  "bar" |
+  // 带钩箭头 (↪)
+  "hook";
 
 /** 箭头的头部、主体和尾部样式 */
 export interface ArrowStyle {
@@ -40,6 +51,71 @@ function default_arrow_style(): ArrowStyle {
 export function applyStyleOption(style: ArrowStyle, option: NamedOption): void {
   switch (option.key) {
     case "dashed": style.dash = "dashed"; break;
+    case "to head": style.head = "normal"; break;
+    case "rightarrow": {
+      style.head = "normal";
+      style.tail = "none";
+      break;
+    }
+    case "leftarrow": {
+      style.head = "none";
+      style.tail = "normal";
+      break;
+    }
+    case "leftrightarrow": {
+      style.head = "normal";
+      style.tail = "normal";
+      break;
+    }
+    case "dash": {
+      style.head = "none";
+      style.tail = "none";
+      break;
+    }
+    case "two heads": style.head = "twohead"; break;
+    case "twoheadrightarrow": {
+      style.head = "twohead";
+      style.tail = "none";
+      break;
+    }
+    case "twoheadleftarrow": {
+      style.head = "none";
+      style.tail = "twohead";
+      break;
+    }
+    case "tail": style.tail = "tail"; break;
+    case "rightarrowtail": {
+      style.head = "normal";
+      style.tail = "tail";
+      break;
+    }
+    case "leftarrowtail": {
+      style.head = "tail";
+      style.tail = "normal";
+      break;
+    }
+    case "maps to": style.tail = "bar"; break;
+    case "mapsto": {
+      style.head = "normal";
+      style.tail = "bar";
+      break;
+    }
+    case "mapsfrom": {
+      style.head = "bar";
+      style.tail = "normal";
+      break;
+    }
+    case "hook": style.tail = "hook"; break;
+    case "hookrightarrow": {
+      style.head = "normal";
+      style.tail = "hook";
+      break;
+    }
+    case "hookleftarrow": {
+      style.head = "hook";
+      style.tail = "normal";
+      break;
+    }
   }
 }
 

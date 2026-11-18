@@ -90,6 +90,7 @@ TikzcdKaTeX.setTikzcdStyle({
 \end{tikzcd}
 ```
 
+### 标签样式设置
 标签支持的设置项如下：
 | 设置项 | 效果 |
 | :---: | :--: |
@@ -110,5 +111,47 @@ TikzcdKaTeX.setTikzcdStyle({
 ```tex
 \begin{tikzcd}
   A \arrow[r, "p" pos=0.25, "q" {swap, pos=0.75}] & B
+\end{tikzcd}
+```
+
+### 箭头样式设置
+箭头支持的设置项如下：
+
+| 设置项 | 效果 |
+| :---： | :-: |
+| `dashed` | 设置箭身为虚线 |
+| `to head` | 设置箭头为正常 |
+| `rightarrow` | 正常箭头 |
+| `leftarrow` | 反向箭头 |
+| `leftrightarrow` | 双边箭头 |
+| `dash` | 无头箭头 |
+| `two heads` | 设置箭头为双头 |
+| `twoheadrightarrow` | 双头箭头 |
+| `twoheadleftarrow` | 反向双头箭头 |
+| `tail` | 设置箭尾带尾 |
+| `rightarrowtail` | 带尾箭头 |
+| `leftarrowtail` | 反向带尾箭头 |
+| `maps to` | 设置箭尾带杠 |
+| `mapsto` | 带杠箭头 |
+| `mapsfrom` | 反向带杠箭头 |
+| `hook` | 设置箭尾带钩 |
+| `hookrightarrow` | 带钩箭头 |
+| `hookleftarrow` | 反向带钩箭头 |
+
+```tex
+\begin{tikzcd}
+  X \arrow[r, "f"] \arrow[d, two heads] & Y \\
+  \mathrm{coim}(f) \arrow[r, dashed] & \mathrm{im}(f) \arrow[u, hook]
+\end{tikzcd}
+```
+
+```tex
+\begin{tikzcd}
+	Y \arrow[rd, "\phi" description, dashed]
+    \arrow[rrd, "\varphi_1"]
+	  \arrow[rdd, "\varphi_2"']
+    && \\
+	& P \arrow[r, "\pi_1"'] \arrow[d, "\pi_2"] & {X_1} \\
+	& {X_2}
 \end{tikzcd}
 ```

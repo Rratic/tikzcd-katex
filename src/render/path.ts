@@ -1,6 +1,6 @@
 // 移植自 [quiver](https://github.com/varkor/quiver)
 
-import type { Point } from "./point";
+import type { Point } from "../geometry/point";
 
 /** 创建 SVG 路径的辅助类 */
 export class Path {
