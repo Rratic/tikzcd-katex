@@ -37,6 +37,24 @@ export class Point {
     return Math.atan2(this.y, this.x);
   }
 
+  /** 限制在 [-90°, 90°] 的角度，用于使标签不会上下颠倒 */
+  proper_angle(): number {
+    const angle = this.angle();
+    if (angle > Math.PI / 2) {
+      return angle - Math.PI;
+    }
+    else if (angle < -Math.PI / 2) {
+      return angle + Math.PI;
+    }
+    return angle;
+  }
+
+  /** 单位法向量，对应 SVG 坐标系中逆时针 90° 方向 */
+  norm(): Point {
+    const len = this.length();
+    return new Point(this.y / len, -this.x / len);
+  }
+
   /** 逆时针旋转 `theta`；在 SVG 坐标系中为顺时针 */
   rotate(theta: number): Point {
     return new Point(

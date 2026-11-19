@@ -22,20 +22,29 @@ function unit_px(value: number): string {
 
 /** 定位标签 */
 function positionLabel(label: HTMLElement, geometry: ArrowGeometry, labelStyle: LabelStyle, em: number): CellBox {
-  const { start, tip } = geometry;
-  const dx = tip.x - start.x, dy = tip.y - start.y;
-  const length = Math.hypot(dx, dy);
+  const vector = geometry.tip.sub(geometry.start);
+  const norm = vector.norm();
+
+  const pos = labelStyle.pos;
   const side = labelStyle.alignment === "center" ? 0 : labelStyle.alignment === "swap" ? -1 : 1;
-  const nx = side * dy / length, ny = -side * dx / length;
+
+  // 获取标签渲染结果的大小
   const style = label.ownerDocument.defaultView!.getComputedStyle(label);
   const width = parseFloat(style.width), height = parseFloat(style.height);
-  const distance = (labelStyle.sloped ? height : Math.abs(nx) * width + Math.abs(ny) * height) / 2 + em * 0.12;
-  const position = labelStyle.pos;
-  const x = start.x + dx * position + nx * distance - width / 2;
-  const y = start.y + dy * position + ny * distance - height / 2;
+  const distance = (labelStyle.sloped ? height : Math.abs(norm.x) * width + Math.abs(norm.y) * height) / 2 + em * 0.12;
+
+  // 计算标签中心位置
+  const position = geometry.start.add(vector.mul(pos)).add(norm.mul(side * distance));
+
+  const x = position.x - width / 2;
+  const y = position.y - height / 2;
+
   setStyle(label, "left", unit_px(x));
   setStyle(label, "top", unit_px(y));
-  setStyle(label, "transform", labelStyle.sloped ? "rotate(" + Math.atan2(dy, dx) + "rad)" : "none");
+  if (labelStyle.sloped) {
+    const rotation = vector.proper_angle();
+    setStyle(label, "transform", "rotate(" + rotation + "rad)");
+  }
   setStyle(label, "visibility", "visible");
   return { x, y, width, height };
 }
