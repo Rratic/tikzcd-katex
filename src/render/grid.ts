@@ -1,7 +1,7 @@
 import type { Diagram } from "../model/diagram";
 import type { FormulaNode, HtmlBuilder, SpanConstructor } from "../adapter/katex";
 import { buildCell } from "../adapter/builders";
-import { addressKey } from "../model/diagram";
+import { to_key } from "../model/address";
 import { layoutGrid } from "../layout/grid";
 
 /** 全局行间距，单位为 em */
@@ -50,7 +50,7 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
    */
   return function (group, options) {
     const { diagram, mode } = group as DiagramNode;
-    const native = diagram.rows.map(row => row.map(cell => buildCell(this, cell.content, mode, options)));
+    const native = diagram.cells.map(row => row.map(cell => buildCell(this, cell.content, mode, options)));
     const textOptions = options.havingStyle(options.style.text());
     const scale = textOptions.sizeMultiplier / options.sizeMultiplier;
     const settings = {
@@ -62,7 +62,7 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
     const metrics = native.map(row => row.map(cell => ({ width: 0, height: cell.height, depth: cell.depth })));
     const layout = layoutGrid(metrics, settings);
 
-    const cells = diagram.rows.flatMap((row, r) => row.map((cell, c) => {
+    const cells = diagram.cells.flatMap((row, r) => row.map((cell, c) => {
       const formula = native[r]![c]!;
       const strut = new Span([], [], undefined, {
         display: "inline-block", width: "0", height: em(formula.height + formula.depth),
@@ -74,7 +74,7 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
         position: "absolute", width: "max-content",
         top: em(layout.cells[r]![c]!.y),
       });
-      span.setAttribute("data-tikzcd-cell", addressKey(cell));
+      span.setAttribute("data-tikzcd-cell", to_key(cell));
       if (!cell.content.length) span.setAttribute("data-tikzcd-empty", "true");
       return span;
     }));
@@ -117,7 +117,7 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
       labels: labels.map(label => label.style),
     }))));
     root.setAttribute("data-tikzcd-layout", JSON.stringify({
-      rows: metrics, settings, cellAxis: textOptions.fontMetrics().axisHeight * scale,
+      cells: metrics, settings, cellAxis: textOptions.fontMetrics().axisHeight * scale,
     }));
 
     return root;

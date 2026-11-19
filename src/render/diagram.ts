@@ -3,7 +3,7 @@ import type { CellBox } from "../geometry/arrow";
 import { drawArrow } from "./arrow";
 import { setStyle } from "./dom";
 import { renderLabels } from "./label";
-import { addressKey } from "../model/diagram";
+import { from_key, to_key } from "../model/address";
 import type { ArrowOptions, DiagramArrow, LabelStyle } from "../model/arrow";
 import { layoutGrid } from "../layout/grid";
 import type { CellMetrics, GridSettings } from "../layout/grid";
@@ -24,7 +24,7 @@ interface MountedDiagram {
   labels: Map<string, HTMLElement>;
   svg?: SVGSVGElement;
   grid: HTMLElement;
-  metrics: { rows: CellMetrics[][]; settings: GridSettings; cellAxis: number };
+  metrics: { cells: CellMetrics[][]; settings: GridSettings; cellAxis: number };
   depth: number;
   error?: string;
 }
@@ -51,14 +51,14 @@ function renderDiagram(diagram: MountedDiagram): void {
   if (!root.getClientRects().length || !root.getBoundingClientRect().height) return;
   const em = parseFloat(window.getComputedStyle(root).fontSize);
   for (const cell of cells) {
-    const [r, c] = cell.dataset.tikzcdCell!.split(":").map(Number) as [number, number];
-    metrics.rows[r]![c]!.width = parseFloat(window.getComputedStyle(cell).width) / em;
+    const { row, column } = from_key(cell.dataset.tikzcdCell!)!;
+    metrics.cells[row]![column]!.width = parseFloat(window.getComputedStyle(cell).width) / em;
   }
-  const layout = layoutGrid(metrics.rows, metrics.settings);
+  const layout = layoutGrid(metrics.cells, metrics.settings);
   setStyle(grid, "width", unit(layout.width));
   for (const cell of cells) {
-    const [r, c] = cell.dataset.tikzcdCell!.split(":").map(Number) as [number, number];
-    const box = layout.cells[r]![c]!;
+    const { row, column } = from_key(cell.dataset.tikzcdCell!)!;
+    const box = layout.cells[row]![column]!;
     setStyle(cell, "left", unit(box.x));
     setStyle(cell, "top", unit(box.y));
   }
@@ -87,7 +87,7 @@ function renderDiagram(diagram: MountedDiagram): void {
   try {
     const defs = document.createElementNS(SVG, "defs");
     const paths = arrows.flatMap((arrow, index) => {
-      const geometry = layoutArrow(boxes.get(addressKey(arrow.source))!, boxes.get(addressKey(arrow.target))!, em);
+      const geometry = layoutArrow(boxes.get(to_key(arrow.source))!, boxes.get(to_key(arrow.target))!, em);
       const arrowLabels = arrow.labels.flatMap((style, labelIndex) => {
         const element = labels.get(index + ":" + labelIndex);
         return element ? [{ element, style }] : [];

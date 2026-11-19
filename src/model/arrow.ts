@@ -1,6 +1,6 @@
 // 移植自 [quiver](https://github.com/varkor/quiver)
 
-import type { CellAddress } from "./diagram";
+import type { CellAddress } from "./address";
 import type { NamedOption } from "../parser/options";
 import type { FormulaNode } from "../adapter/katex";
 
@@ -167,7 +167,11 @@ export function applyLabelOption(style: LabelStyle, option: NamedOption): void {
       style.sloped = true;
       break;
     }
-    case "pos": style.pos = Number(option.value!); break;
+    case "pos": {
+      const pos = Number(option.value!);
+      if (!Number.isFinite(pos)) style.pos = pos;
+      break;
+    }
     // https://tikz.dev/tikz-shapes.html#section-pos-option
     case "at start": style.pos = 0; break;
     case "very near start": style.pos = 0.125; break;

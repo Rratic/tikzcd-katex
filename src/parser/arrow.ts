@@ -1,7 +1,8 @@
 import type katex from "katex";
 import type { Token } from "katex";
 import type { FormulaNode, Parser } from "../adapter/katex";
-import type { CellAddress } from "../model/diagram";
+import { from_key } from "../model/address";
+import type { CellAddress } from "../model/address";
 import { applyLabelOption, applyStyleOption, createArrow, createArrowOptions, createLabel } from "../model/arrow";
 import type { ArrowOptions, DiagramArrow, DiagramLabel } from "../model/arrow";
 import { OptionsSyntaxError, parseOptions } from "./options";
@@ -32,17 +33,6 @@ function resolve(origin: CellAddress, position?: ArrowPosition): CellAddress {
       column: origin.column + (position?.offset.column ?? 0),
     };
   }
-}
-
-function parse_absolute_position(literal: string): ArrowPosition {
-  const match = /^([1-9]\d*)\s*-\s*([1-9]\d*)$/.exec(literal)!;
-  return {
-    kind: "absolute",
-    address: {
-      row: Number(match[1]) - 1,
-      column: Number(match[2]) - 1
-    }
-  };
 }
 
 function parse_relative_position(literal: string): ArrowPosition {
@@ -91,7 +81,7 @@ export function parseArrow(
 
   // 配置箭头
   for (const parameter of parameters) {
-    if (parameter.type === "option") applyArrowOption(parameter, declaration);
+    if (parameter.type === "option") applyArrowOption(parameter, declaration, ParseError);
   }
   const labelStyle = createLabel().style;
   if (declaration.options.phantom) labelStyle.alignment = "center";
@@ -144,7 +134,7 @@ function* readOptionTokens(parser: Parser): Generator<OptionToken<DiagramLabel>>
 }
 
 /** 对 `NamedOption` 执行配置 */
-function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration): void {
+function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration, ParseError: typeof katex.ParseError): void {
   // 单独处理相对位置
   if (/^[rdlu]+$/.test(option.key)) {
     declaration.endpoints.target = parse_relative_position(option.key);
@@ -152,12 +142,15 @@ function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration): v
   }
 
   // 单独处理绝对位置
-  if (option.key === "from") {
-    declaration.endpoints["source"] = parse_absolute_position(option.value!);
-    return;
-  }
-  if (option.key === "to") {
-    declaration.endpoints["target"] = parse_absolute_position(option.value!);
+  if (option.key === "from" || option.key === "to") {
+    const position = from_key(option.value?.trim() ?? "");
+    if (!position) {
+      throw new ParseError("expects \\arrow[" + option.key + "=row-column]", declaration.token);
+    }
+    declaration.endpoints[option.key == "from" ? "source" : "target"] = {
+      kind: "absolute",
+      address: position!
+    };
     return;
   }
 

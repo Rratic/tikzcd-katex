@@ -1,5 +1,6 @@
 import type katex from "katex";
 import type { Diagram, DiagramCell } from "../model/diagram";
+import { to_key } from "../model/address";
 import type { DiagramArrow } from "../model/arrow";
 import type { FormulaNode, Parser } from "../adapter/katex";
 import { arrowContexts, resolveArrow } from "./arrow";
@@ -30,7 +31,7 @@ function parseDiagramBody(
   ParseError: typeof katex.ParseError,
   declarations: ArrowDeclaration[],
 ): Diagram<FormulaNode[]> {
-  const rows: DiagramCell<FormulaNode[]>[][] = [];
+  const cells: DiagramCell<FormulaNode[]>[][] = [];
   const arrows: { arrow: DiagramArrow; token?: ArrowDeclaration["token"] }[] = [];
   let row: DiagramCell<FormulaNode[]>[] = [];
 
@@ -47,23 +48,23 @@ function parseDiagramBody(
     if (topLevel.length !== declarations.length) {
       throw new ParseError("\\arrow must be a top-level tikzcd cell declaration", declarations[0]?.token);
     }
-    const origin = { row: rows.length, column: row.length };
+    const origin = { row: cells.length, column: row.length };
     for (const declaration of declarations) {
       arrows.push({ arrow: resolveArrow(declaration, origin), token: declaration.token });
     }
     declarations.length = 0;
 
-    row.push({ row: rows.length, column: row.length, content });
+    row.push({ row: cells.length, column: row.length, content });
     const next = parser.fetch();
     if (next.text === "&") {
       parser.consume();
     } else if (next.text === "\\\\") {
       parser.consume();
-      rows.push(row);
+      cells.push(row);
       row = [];
     } else if (next.text === "\\end") {
       // 末尾的换行无效
-      if (row.length > 1 || content.length > 0 || topLevel.length > 0) rows.push(row);
+      if (row.length > 1 || content.length > 0 || topLevel.length > 0) cells.push(row);
       break;
     } else { // EOF
       throw new ParseError("Expected & or \\\\ or \\end{tikzcd}", next);
@@ -82,18 +83,24 @@ function parseDiagramBody(
   }
   parser.gullet.endGroup();
 
-  // 不存在的端点
+  const width = cells.reduce((width, row) => Math.max(width, row.length), 0);
+  const height = cells.length;
+
+  // 检查端点存在性
   for (const { arrow, token } of arrows) {
-    for (const address of [arrow.source, arrow.target]) {
-      if (!rows[address.row]?.[address.column]) {
-        throw new ParseError("\\arrow endpoint does not exist: " + (address.row + 1) + "-" + (address.column + 1), token);
-      }
+    if (arrow.source.row >= height || arrow.source.column >= width) {
+      throw new ParseError("\\arrow source does not exist: " + to_key(arrow.source), token);
+    }
+    if (arrow.target.row >= height || arrow.target.column >= width) {
+      throw new ParseError("\\arrow target does not exist: " + to_key(arrow.target), token);
     }
   }
 
   return {
     kind: "tikzcd",
-    rows,
+    width,
+    height,
+    cells,
     arrows: arrows.map(declaration => declaration.arrow)
   };
 }
