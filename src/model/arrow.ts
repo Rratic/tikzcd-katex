@@ -11,7 +11,9 @@ import type { FormulaNode } from "../adapter/katex";
 export type ArrowBodyStyle =
   // 无边不作为一种箭体设置
   // 正常直线 (-)
-  "line";
+  "line" |
+  // 双线 (=)
+  "double";
 
 /** 附加在 `ArrowBodyStyle` 上的作用 */
 export type ArrowDashStyle = "solid" | "dashed";
@@ -68,6 +70,12 @@ export function applyStyleOption(style: ArrowStyle, option: NamedOption): void {
       break;
     }
     case "dash": {
+      style.head = "none";
+      style.tail = "none";
+      break;
+    }
+    case "equal": {
+      style.body = "double";
       style.head = "none";
       style.tail = "none";
       break;

@@ -76,7 +76,11 @@ export function drawArrow(document: Document, geometry: ArrowGeometry, style: Ar
 
   const bodyStart = start.add(polar(tail.shorten, angle));
   const bodyEnd = tip.sub(polar(head.shorten, angle));
-  const body = new Path().move_to(bodyStart).line_by(bodyEnd.sub(bodyStart));
+  const body = new Path();
+  const normal = tip.sub(start).norm();
+  for (const offset of style.body === "double" ? [-0.08, 0.08] : [0]) {
+    body.move_to(bodyStart.add(normal.mul(offset * em))).line_by(bodyEnd.sub(bodyStart));
+  }
   const group = document.createElementNS(SVG, "g");
   group.setAttribute("stroke-width", String(em * 0.04));
   for (const [part, data] of [["body", body.toString()], ["tail", tail.path], ["head", head.path]] as const) {

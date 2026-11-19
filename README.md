@@ -133,6 +133,7 @@ TikzcdKaTeX.setTikzcdStyle({
 | `leftarrow` | 反向箭头 |
 | `leftrightarrow` | 双边箭头 |
 | `dash` | 无头箭头 |
+| `equal` | 等号 |
 | `two heads` | 设置箭头为双头 |
 | `twoheadrightarrow` | 双头箭头 |
 | `twoheadleftarrow` | 反向双头箭头 |
