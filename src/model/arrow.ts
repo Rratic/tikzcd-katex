@@ -155,6 +155,7 @@ function default_label_style(): LabelStyle {
 
 export function applyLabelOption(style: LabelStyle, option: NamedOption): void {
   switch (option.key) {
+    case "'":
     case "swap": style.alignment = "swap"; break;
     case "sloped": style.sloped = true; break;
     case "description": {

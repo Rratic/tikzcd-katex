@@ -94,7 +94,6 @@ export function parseArrow(
     if (parameter.type !== "quoted") continue;
     const label = parameter.value;
     label.style = { ...labelStyle };
-    if (parameter.primes) applyLabelOption(label.style, { type: "option", key: "swap" });
     for (const option of parameter.options) applyLabelOption(label.style, option);
     declaration.labels.push(label);
   }
