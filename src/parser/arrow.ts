@@ -142,11 +142,16 @@ function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration, Pa
 
   // 单独处理绝对位置
   if (option.key === "from" || option.key === "to") {
+    const end = option.key == "from" ? "source" : "target";
+    if (/^[rdlu]+$/.test(option.key)) {
+      declaration.endpoints[end] = parse_relative_position(option.key);
+      return;
+    }
     const position = from_key(option.value?.trim() ?? "");
     if (!position) {
-      throw new ParseError("expects \\arrow[" + option.key + "=row-column]", declaration.token);
+      throw new ParseError("expects position in \\arrow[" + option.key + "=?]", declaration.token);
     }
-    declaration.endpoints[option.key == "from" ? "source" : "target"] = {
+    declaration.endpoints[end] = {
       kind: "absolute",
       address: position!
     };
