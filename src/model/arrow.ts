@@ -178,7 +178,7 @@ export function applyLabelOption(style: LabelStyle, option: NamedOption): void {
     }
     case "pos": {
       const pos = Number(option.value!);
-      if (!Number.isFinite(pos)) style.pos = pos;
+      if (Number.isFinite(pos)) style.pos = pos;
       break;
     }
     // https://tikz.dev/tikz-shapes.html#section-pos-option
