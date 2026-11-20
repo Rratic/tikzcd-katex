@@ -1,4 +1,11 @@
 # CHANGELOG
+## 0.4.0
+### Features
+- 支持箭头设置 `shift left`、`shift right`
+- 支持箭头设置 `bend left`、`bend right`、`in`、`out`、`relative`、`loop`、`loop above`、`loop below`、`loop left`、`loop right`
+- 支持箭头设置 `solid`、`dotted`
+- 为无效/不支持的设置值添加警告
+
 ## 0.3.0
 ### Features
 - 渲染效果更美观，接近原生 tikz-cd
