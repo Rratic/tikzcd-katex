@@ -78,22 +78,20 @@ function endPath(style: ArrowEndStyle, endpoint: Point, angle: number, metrics: 
  * @param geometry 已裁剪到节点边界的箭头几何
  * @param style 箭身和端点样式
  * @param metrics 与几何使用相同单位的图表度量
+ * @param id 此箭头的唯一标识，用于双线箭身的透明遮罩
  */
-export function drawArrow(document: Document, geometry: ArrowGeometry, style: ArrowStyle, metrics: DiagramMetrics): SVGGElement {
-  const { start, tip, angle, length } = geometry;
-  const tail = endPath(style.tail, start, angle + Math.PI, metrics, 1);
-  const head = endPath(style.head, tip, angle, metrics, -1);
+export function drawArrow(document: Document, geometry: ArrowGeometry, style: ArrowStyle, metrics: DiagramMetrics, id: string): SVGGElement {
+  const { start, tip, curve, length } = geometry;
+  const tail = endPath(style.tail, start, curve.tangent(0).angle() + Math.PI, metrics, 1);
+  const head = endPath(style.head, tip, curve.tangent(1).angle(), metrics, -1);
   if (length < tail.length + head.length) {
     throw new RangeError("tikzcd arrow endpoints are too close");
   }
 
-  const bodyStart = start.add(polar(tail.shorten, angle));
-  const bodyEnd = tip.sub(polar(head.shorten, angle));
-  const body = new Path();
-  const normal = tip.sub(start).norm();
-  for (const offset of style.body === "double" ? [-0.225 * metrics.xHeight, 0.225 * metrics.xHeight] : [0]) {
-    body.move_to(bodyStart.add(normal.mul(offset))).line_by(bodyEnd.sub(bodyStart));
-  }
+  const segment = curve.segment(curve.t_after_length(tail.shorten), curve.t_after_length(length - head.shorten));
+  const body = new Path().move_to(segment[0]);
+  if (segment.length === 2) body.line_by(segment[1].sub(segment[0]));
+  else body.curve_to(segment[1], segment[2], segment[3]);
   const group = document.createElementNS(SVG, "g");
   group.setAttribute("stroke-width", String(metrics.lineWidth));
   for (const [part, data] of [["body", body.toString()], ["tail", tail.path], ["head", head.path]] as const) {
@@ -102,6 +100,33 @@ export function drawArrow(document: Document, geometry: ArrowGeometry, style: Ar
     // KaTeX CSS 默认设置 .katex svg path { stroke: none }
     path.style.cssText = "fill:none;stroke:currentColor;stroke-linecap:" + (part === "body" ? "butt" : "round") + ";stroke-linejoin:round";
     path.setAttribute("d", data);
+    if (part === "body" && style.body === "double") {
+      // 使用描边加透明遮罩保持两线等宽
+      const separation = 0.45 * metrics.xHeight;
+      path.setAttribute("stroke-width", String(separation + metrics.lineWidth));
+      if (separation > metrics.lineWidth) {
+        const mask = document.createElementNS(SVG, "mask");
+        mask.id = id + "-body";
+        mask.setAttribute("maskUnits", "userSpaceOnUse");
+        const margin = separation + metrics.lineWidth;
+        const x = Math.min(...segment.map(point => point.x)) - margin;
+        const y = Math.min(...segment.map(point => point.y)) - margin;
+        const width = Math.max(...segment.map(point => point.x)) - x + margin;
+        const height = Math.max(...segment.map(point => point.y)) - y + margin;
+        for (const [name, value] of Object.entries({ x, y, width, height })) mask.setAttribute(name, String(value));
+        const background = document.createElementNS(SVG, "rect");
+        for (const [name, value] of Object.entries({ x, y, width, height })) background.setAttribute(name, String(value));
+        background.style.fill = "white";
+        const gap = document.createElementNS(SVG, "path");
+        gap.setAttribute("d", data);
+        gap.style.cssText = "fill:none;stroke:black;stroke-linecap:butt;stroke-width:" + (separation - metrics.lineWidth);
+        mask.append(background, gap);
+        const defs = document.createElementNS(SVG, "defs");
+        defs.appendChild(mask);
+        group.appendChild(defs);
+        path.setAttribute("mask", "url(#" + mask.id + ")");
+      }
+    }
     if (part === "body" && style.dash === "dashed") {
       path.setAttribute("stroke-dasharray", 7 * metrics.lineWidth + " " + 4 * metrics.lineWidth);
     }

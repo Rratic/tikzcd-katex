@@ -1,7 +1,6 @@
 import type { ArrowGeometry, CellBox } from "../geometry/arrow";
 import type { LabelStyle } from "../model/arrow";
 import type { DiagramMetrics } from "../layout/metrics";
-import { Point } from "../geometry/point";
 import { setStyle } from "./dom";
 
 const SVG = "http://www.w3.org/2000/svg";
@@ -31,14 +30,9 @@ function unit_px(value: number): string {
  * @param padding 标签内容与锚点之间的留白
  */
 function positionLabel(label: HTMLElement, geometry: ArrowGeometry, labelStyle: LabelStyle, padding: number): CellBox {
-  const vector = geometry.tip.sub(geometry.start);
-
-  // 切向量
-  // 为之后非直线预留
-  const tangent = vector;
-  const norm = tangent.norm();
-
   const pos = labelStyle.pos;
+  const tangent = geometry.curve.tangent(pos);
+  const norm = tangent.norm();
   const side = labelStyle.alignment === "center" ? 0 : labelStyle.alignment === "swap" ? -1 : 1;
 
   // 获取标签渲染结果的大小
@@ -47,7 +41,7 @@ function positionLabel(label: HTMLElement, geometry: ArrowGeometry, labelStyle: 
   const distance = (labelStyle.sloped ? height : Math.abs(norm.x) * width + Math.abs(norm.y) * height) / 2 + padding;
 
   // 计算标签中心位置
-  const position = geometry.start.add(vector.mul(pos)).add(norm.mul(side * distance));
+  const position = geometry.curve.point(pos).add(norm.mul(side * distance));
 
   const x = position.x - width / 2;
   const y = position.y - height / 2;
@@ -74,10 +68,10 @@ function positionLabel(label: HTMLElement, geometry: ArrowGeometry, labelStyle: 
 export function renderLabels(document: Document, labels: readonly MountedLabel[], geometry: ArrowGeometry, metrics: DiagramMetrics, viewport: LabelMaskViewport): SVGMaskElement | undefined {
   const padding = 0.5 * metrics.xHeight;
   const margin = metrics.xHeight * 2;
-  const masked: { box: CellBox; sloped: boolean }[] = [];
+  const masked: { box: CellBox; angle: number }[] = [];
   for (const { element, style } of labels) {
     const box = positionLabel(element, geometry, style, padding + metrics.lineWidth / 2);
-    if (style.mask) masked.push({ box, sloped: style.sloped });
+    if (style.mask) masked.push({ box, angle: style.sloped ? geometry.curve.tangent(style.pos).proper_angle() : 0 });
   }
   if (!masked.length) return;
 
@@ -86,27 +80,27 @@ export function renderLabels(document: Document, labels: readonly MountedLabel[]
   mask.id = viewport.id;
   mask.setAttribute("stroke", "none");
   mask.setAttribute("maskUnits", "userSpaceOnUse");
-  mask.setAttribute("x", String(-margin));
-  mask.setAttribute("y", String(-margin));
-  mask.setAttribute("width", String(viewport.width + 2 * margin));
-  mask.setAttribute("height", String(viewport.height + 2 * margin));
+
+  // 控制点的包围盒覆盖整条曲线，避免向图式外弯曲的箭线被遮罩截断
+  const points = geometry.curve.segment(0, 1);
+  const x = Math.min(0, ...points.map(point => point.x)) - margin;
+  const y = Math.min(0, ...points.map(point => point.y)) - margin;
+  const width = Math.max(viewport.width, ...points.map(point => point.x)) - x + margin;
+  const height = Math.max(viewport.height, ...points.map(point => point.y)) - y + margin;
+  for (const [name, value] of Object.entries({ x, y, width, height })) mask.setAttribute(name, String(value));
   const background = document.createElementNS(SVG, "rect");
-  background.setAttribute("x", String(-margin));
-  background.setAttribute("y", String(-margin));
-  background.setAttribute("width", String(viewport.width + 2 * margin));
-  background.setAttribute("height", String(viewport.height + 2 * margin));
+  for (const [name, value] of Object.entries({ x, y, width, height })) background.setAttribute(name, String(value));
   background.style.fill = "white";
   mask.appendChild(background);
   // 同一箭头的所有遮挡区域共享一个 mask，避免后一个标签覆盖前一个
-  for (const { box, sloped } of masked) {
+  for (const { box, angle } of masked) {
     const rect = document.createElementNS(SVG, "rect");
     rect.setAttribute("x", String(box.x - padding));
     rect.setAttribute("y", String(box.y - padding));
     rect.setAttribute("width", String(box.width + 2 * padding));
     rect.setAttribute("height", String(box.height + 2 * padding));
-    if (sloped) {
-      const angle = geometry.tip.sub(geometry.start).proper_angle() * 180 / Math.PI;
-      rect.setAttribute("transform", "rotate(" + angle + " " + (box.x + box.width / 2) + " " + (box.y + box.height / 2) + ")");
+    if (angle) {
+      rect.setAttribute("transform", "rotate(" + angle * 180 / Math.PI + " " + (box.x + box.width / 2) + " " + (box.y + box.height / 2) + ")");
     }
     rect.style.fill = "black";
     mask.appendChild(rect);

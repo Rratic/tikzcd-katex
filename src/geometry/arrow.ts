@@ -1,8 +1,8 @@
 // 移植自 [quiver](https://github.com/varkor/quiver)
 
-import { Line } from "./curve";
-import type { CurvePoint } from "./curve";
-import { Point } from "./point";
+import { CubicBezier, EPSILON, Line } from "./curve";
+import type { Curve, CurvePoint } from "./curve";
+import { Point, polar } from "./point";
 import { RoundedRectangle } from "./shape";
 import type { DiagramMetrics } from "../layout/metrics";
 
@@ -23,7 +23,7 @@ export interface CellNode extends CellBox {
 export interface ArrowGeometry {
   start: Point;
   tip: Point;
-  angle: number;
+  curve: Curve;
   length: number;
 }
 
@@ -75,33 +75,62 @@ function extendMargin(box: CellBox, metrics: DiagramMetrics) {
 }
 
 /**
- * 计算直线箭头的端点
+ * 按对称弯曲角度裁剪节点边界并构建三次曲线
+ *
+ * @param line 连接两个节点数学轴锚点的直线
+ * @param source 起点包含留白的边界
+ * @param target 终点包含留白的边界
+ * @param bend 弯曲角度（度），正数向左，负数向右
+ */
+function layoutBend(line: Line, source: RoundedRectangle, target: RoundedRectangle, bend: number): ArrowGeometry {
+  const out = -(bend % 360) * Math.PI / 180, incoming = -Math.PI - out;
+  const boundary = (anchor: Point, shape: RoundedRectangle, direction: number) => {
+    const distance = shape.size.length() + anchor.sub(shape.centre).length() + 1;
+    return findEndpoint(new Line(anchor, anchor.add(polar(distance, direction))), shape, true).point;
+  };
+  const start = boundary(line.point(0), source, line.angle + out);
+  const tip = boundary(line.point(1), target, line.angle + incoming);
+  const vector = tip.sub(start), distance = vector.length();
+  if (distance <= EPSILON) throw new RangeError("tikzcd arrow endpoints are too close");
+  // TikZ 默认 looseness=1，控制距离为边界锚点间距离的 0.3915 倍
+  const control = 0.3915 * distance, direction = vector.angle();
+  const curve = new CubicBezier(
+    start, start.add(polar(control, direction + out)),
+    tip.add(polar(control, direction + incoming)), tip,
+  );
+  return { start, tip, curve, length: curve.arc_length(1) };
+}
+
+/**
+ * 计算箭头端点和路径；弯曲箭头采用 TikZ 的出入射角和默认控制距离
  *
  * @param from 起点内容框
  * @param to 终点内容框
  * @param metrics 与内容框使用相同单位的图式度量
+ * @param bend 弯曲角度（度），正数向左，负数向右，零为直线
  */
-export function layoutArrow(from: CellNode, to: CellNode, metrics: DiagramMetrics): ArrowGeometry {
+export function layoutArrow(from: CellNode, to: CellNode, metrics: DiagramMetrics, bend: number): ArrowGeometry {
   // 连接数学轴上的锚点
   const source = extendMargin(from, metrics), target = extendMargin(to, metrics);
-  const curve = new Line(
-    new Point(source.centre.x, from.baseline - metrics.axis),
-    new Point(target.centre.x, to.baseline - metrics.axis),
-  );
+  const origin = new Point(source.centre.x, from.baseline - metrics.axis);
+  const end = new Point(target.centre.x, to.baseline - metrics.axis);
+  const line = new Line(origin, end);
+  if (line.width <= EPSILON) throw new RangeError("tikzcd arrow endpoints are too close");
+
+  // 没有弯曲时直接使用直线
+  if (bend % 360 !== 0) return layoutBend(line, source, target, bend);
 
   // 起始点
-  const first = findEndpoint(curve, source, true), last = findEndpoint(curve, target, false);
-  const startLength = curve.arc_length(first.t);
-  const endLength = curve.arc_length(last.t);
-  if (endLength <= startLength) {
+  const first = findEndpoint(line, source, true), last = findEndpoint(line, target, false);
+  if (last.t <= first.t) {
     throw new RangeError("tikzcd arrow endpoints are too close");
   }
 
   // 裁剪后的端点
-  const start = curve.point(curve.t_after_length(startLength));
-  const tip = curve.point(curve.t_after_length(endLength));
+  const start = first.point, tip = last.point;
+  const curve = new Line(start, tip);
 
   return {
-    start, tip, angle: curve.angle, length: tip.sub(start).length(),
+    start, tip, curve, length: curve.width,
   };
 }

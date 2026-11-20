@@ -33,12 +33,13 @@ export type ArrowEndStyle =
   // 带钩箭头 (↪)
   "hook";
 
-/** 箭头的头部、主体和尾部样式 */
+/** 箭头的主体、端点和路径样式 */
 export interface ArrowStyle {
   body: ArrowBodyStyle,
   dash: ArrowDashStyle,
   head: ArrowEndStyle,
-  tail: ArrowEndStyle
+  tail: ArrowEndStyle,
+  bend: number,
 }
 
 function default_arrow_style(): ArrowStyle {
@@ -47,6 +48,7 @@ function default_arrow_style(): ArrowStyle {
     dash: "solid",
     head: "normal",
     tail: "none",
+    bend: 0,
   };
 }
 
@@ -122,6 +124,15 @@ export function applyStyleOption(style: ArrowStyle, option: NamedOption): void {
     case "hookleftarrow": {
       style.head = "hook";
       style.tail = "normal";
+      break;
+    }
+    case "bend left":
+    case "bend right": {
+      const value = option.value;
+      const angle = value === undefined ? 30 : Number(value);
+      if (Number.isFinite(angle)) {
+        style.bend = option.key === "bend left" ? angle : -angle;
+      }
       break;
     }
   }
@@ -221,28 +232,6 @@ export interface ArrowOptions {
   /** Phantom 模式 */
   phantom: boolean;
 
-  /** 平移 */
-  offset: number;
-
-  /** 弯曲程度 */
-  curve: number;
-
-  /** 环形箭头的半径刻度和角度 */
-  radius: number;
-  angle: number;
-
-  /** 从起点和终点缩短的百分比 */
-  shorten: { source: number; target: number };
-
-  /** 平行线的数量 */
-  level: number;
-
-  /** 使用的曲线类型 */
-  shape: "bezier";
-
-  /** 端点连接到其他箭头时，是否对齐该箭头的实际中点 */
-  edge_alignment: { source: boolean; target: boolean };
-
   /** 箭头样式 */
   style: ArrowStyle;
 }
@@ -251,9 +240,6 @@ export interface ArrowOptions {
 export interface DiagramArrow {
   source: CellAddress;
   target: CellAddress;
-
-  /** n-箭头的 n；与 `options.level` 区分 */
-  level: number;
 
   /** 标签 */
   labels: DiagramLabel[];
@@ -264,14 +250,6 @@ export interface DiagramArrow {
 export function createArrowOptions(): ArrowOptions {
   return {
     phantom: false,
-    offset: 0,
-    curve: 0,
-    radius: 3,
-    angle: 0,
-    shorten: { source: 0, target: 0 },
-    level: 1,
-    shape: "bezier",
-    edge_alignment: { source: true, target: true },
     style: default_arrow_style(),
   };
 }
@@ -281,8 +259,8 @@ export function createArrow(
   source: CellAddress, target: CellAddress, options: ArrowOptions = createArrowOptions(),
 ): DiagramArrow {
   return {
-    source, target,
-    level: 1,
+    source,
+    target,
     labels: [],
     options,
   };

@@ -156,17 +156,6 @@ TikzcdKaTeX.setTikzcdStyle({
 \end{tikzcd}
 ```
 
-```tex
-\begin{tikzcd}
-	Y \arrow[rd, "\phi" description, dashed]
-    \arrow[rrd, "\varphi_1"]
-	  \arrow[rdd, "\varphi_2"']
-    && \\
-	& P \arrow[r, "\pi_1"'] \arrow[d, "\pi_2"] & {X_1} \\
-	& {X_2}
-\end{tikzcd}
-```
-
 `phantom` 命令会隐藏箭头，并让标签默认出在箭头中央，使用正文大小：
 
 ```tex
@@ -174,5 +163,20 @@ TikzcdKaTeX.setTikzcdStyle({
   A \arrow[r] \arrow[d] \arrow[dr, phantom, "\ulcorner", very near start]
     & B \arrow[d] \\
   C \arrow[r] & D
+\end{tikzcd}
+```
+
+`bend left`、`bend right` 命令会将箭头向行进方向左侧/右侧弯曲一定角度，不设置值时为 30 度：
+
+```tex
+\begin{tikzcd}
+  T
+  \arrow[drr, bend left, "x"]
+  \arrow[ddr, bend right, "y"]
+  \arrow[dr, dashed, "{(x,y)}" description] & & \\
+    & X \times_Z Y \arrow[r, "p"] \arrow[d, "q"]
+      & X \arrow[d, "f"] \\
+    & Y \arrow[r, "g"]
+      & Z
 \end{tikzcd}
 ```

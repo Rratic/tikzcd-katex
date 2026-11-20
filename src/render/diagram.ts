@@ -87,7 +87,7 @@ function renderDiagram(diagram: MountedDiagram): void {
   try {
     const defs = document.createElementNS(SVG, "defs");
     const paths = arrows.flatMap((arrow, index) => {
-      const geometry = layoutArrow(boxes.get(to_key(arrow.source))!, boxes.get(to_key(arrow.target))!, drawingMetrics);
+      const geometry = layoutArrow(boxes.get(to_key(arrow.source))!, boxes.get(to_key(arrow.target))!, drawingMetrics, arrow.style.bend);
       const arrowLabels = arrow.labels.flatMap((style, labelIndex) => {
         const element = labels.get(index + ":" + labelIndex);
         return element ? [{ element, style }] : [];
@@ -96,7 +96,7 @@ function renderDiagram(diagram: MountedDiagram): void {
         id: "tikzcd-label-" + diagram.id + "-" + index, width, height,
       });
       if (arrow.phantom) return [];
-      const group = drawArrow(document, geometry, arrow.style, drawingMetrics);
+      const group = drawArrow(document, geometry, arrow.style, drawingMetrics, "tikzcd-arrow-" + diagram.id + "-" + index);
       if (mask) {
         defs.appendChild(mask);
         group.setAttribute("mask", "url(#" + mask.id + ")");
