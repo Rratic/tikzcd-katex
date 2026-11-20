@@ -39,6 +39,7 @@ export interface ArrowStyle {
   dash: ArrowDashStyle,
   head: ArrowEndStyle,
   tail: ArrowEndStyle,
+  shift: number,
   bend: number,
 }
 
@@ -48,6 +49,7 @@ function default_arrow_style(): ArrowStyle {
     dash: "solid",
     head: "normal",
     tail: "none",
+    shift: 0,
     bend: 0,
   };
 }
@@ -124,6 +126,15 @@ export function applyStyleOption(style: ArrowStyle, option: NamedOption): void {
     case "hookleftarrow": {
       style.head = "hook";
       style.tail = "normal";
+      break;
+    }
+    case "shift left":
+    case "shift right": {
+      const value = option.value;
+      const shift = value === undefined ? 1 : Number(value);
+      if (Number.isFinite(shift)) {
+        style.shift = (option.key === "shift left" ? shift : -shift) || 0;
+      }
       break;
     }
     case "bend left":

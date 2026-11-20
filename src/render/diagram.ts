@@ -1,4 +1,4 @@
-import { layoutArrow } from "../geometry/arrow";
+import { layoutArrow, shiftArrow } from "../geometry/arrow";
 import type { CellNode } from "../geometry/arrow";
 import { drawArrow } from "./arrow";
 import { setStyle } from "./dom";
@@ -87,7 +87,8 @@ function renderDiagram(diagram: MountedDiagram): void {
   try {
     const defs = document.createElementNS(SVG, "defs");
     const paths = arrows.flatMap((arrow, index) => {
-      const geometry = layoutArrow(boxes.get(to_key(arrow.source))!, boxes.get(to_key(arrow.target))!, drawingMetrics, arrow.style.bend);
+      const path = layoutArrow(boxes.get(to_key(arrow.source))!, boxes.get(to_key(arrow.target))!, drawingMetrics, arrow.style.bend);
+      const geometry = shiftArrow(path, arrow.style.shift * 0.56 * drawingMetrics.xHeight);
       const arrowLabels = arrow.labels.flatMap((style, labelIndex) => {
         const element = labels.get(index + ":" + labelIndex);
         return element ? [{ element, style }] : [];

@@ -28,6 +28,23 @@ export interface ArrowGeometry {
 }
 
 /**
+ * 沿起终点连线的法向量整体平移箭头
+ *
+ * @param geometry 已完成节点边界裁剪的箭头几何
+ * @param distance 与几何使用相同单位的距离，正数向行进方向左侧平移
+ * @returns 包含平移后端点和曲线的几何，弧长保持不变
+ */
+export function shiftArrow(geometry: ArrowGeometry, distance: number): ArrowGeometry {
+  if (distance === 0) return geometry;
+  const offset = geometry.tip.sub(geometry.start).norm().mul(distance);
+  const points = geometry.curve.segment(0, 1).map(point => point.add(offset));
+  const curve = points.length === 2
+    ? new Line(points[0]!, points[1]!)
+    : new CubicBezier(points[0]!, points[1]!, points[2]!, points[3]!);
+  return { start: points[0]!, tip: points[points.length - 1]!, curve, length: geometry.length };
+}
+
+/**
  * 从边界交点中选择箭头的端点
  *
  * @param curve 连接两个节点数学轴锚点的直线

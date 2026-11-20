@@ -166,6 +166,20 @@ TikzcdKaTeX.setTikzcdStyle({
 \end{tikzcd}
 ```
 
+`shift left`、`shift right` 会将箭头向行进方向左侧/右侧平移，不设置值时默认为 1 单位：
+
+```tex
+\begin{tikzcd}
+  A \arrow[r]
+    & B \arrow[r, shift left]
+        \arrow[r, shift right]
+      & C \arrow[r]
+          \arrow[r, shift left=2]
+          \arrow[r, shift right=2]
+        & \cdots
+\end{tikzcd}
+```
+
 `bend left`、`bend right` 命令会将箭头向行进方向左侧/右侧弯曲一定角度，不设置值时为 30 度：
 
 ```tex
