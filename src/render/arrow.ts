@@ -133,6 +133,8 @@ export function drawArrow(document: Document, geometry: ArrowGeometry, style: Ar
     }
     if (part === "body" && style.dash === "dashed") {
       path.setAttribute("stroke-dasharray", 7 * metrics.lineWidth + " " + 4 * metrics.lineWidth);
+    } else if (part === "body" && style.dash === "dotted") {
+      path.setAttribute("stroke-dasharray", metrics.lineWidth + " " + 2 * metrics.pt);
     }
     group.appendChild(path);
   }

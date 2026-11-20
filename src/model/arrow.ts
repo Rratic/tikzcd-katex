@@ -16,7 +16,7 @@ export type ArrowBodyStyle =
   "double";
 
 /** 附加在 `ArrowBodyStyle` 上的作用 */
-export type ArrowDashStyle = "solid" | "dashed";
+export type ArrowDashStyle = "solid" | "dashed" | "dotted";
 
 /** 箭头端点的样式，适用于两端 */
 export type ArrowEndStyle =
@@ -71,7 +71,9 @@ function bendStyle(style: ArrowStyle): ArrowBendStyle {
 
 export function applyStyleOption(style: ArrowStyle, option: NamedOption): boolean {
   switch (option.key) {
+    case "solid": style.dash = "solid"; break;
     case "dashed": style.dash = "dashed"; break;
+    case "dotted": style.dash = "dotted"; break;
     case "to head": style.head = "normal"; break;
     case "rightarrow": {
       style.head = "normal";
