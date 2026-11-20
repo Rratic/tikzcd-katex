@@ -94,7 +94,7 @@ TikzcdKaTeX.setTikzcdStyle({
 | `swap` | 同加 `'`，放在箭头行进方向的右侧 |
 | `sloped` | 旋转至平行于箭头方向 |
 | `description` | 放在箭头中央，并部分遮盖箭头 |
-| `marking` | 放在箭头中央，并旋转至平行于箭头方向 |
+| `marking` | 使用正文字号，放在箭头中央，并旋转至平行于箭头方向 |
 | `pos=x` | 设置在箭头行进方向位置 |
 | `at start` | 设置 `pos` 为 0 |
 | `very near start` | 设置 `pos` 为 0.125 |

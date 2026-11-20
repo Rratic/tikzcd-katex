@@ -142,6 +142,9 @@ export type LabelAlignmentStyle =
 export interface LabelStyle {
   alignment: LabelAlignmentStyle,
 
+  /** 数学字号 */
+  size: "text" | "script",
+
   /** 按行进方向的位置 */
   pos: number,
 
@@ -155,6 +158,7 @@ export interface LabelStyle {
 function default_label_style(): LabelStyle {
   return {
     alignment: "auto",
+    size: "script",
     pos: 0.5,
     mask: false,
     sloped: false,
@@ -173,6 +177,7 @@ export function applyLabelOption(style: LabelStyle, option: NamedOption): void {
     }
     case "marking": {
       style.alignment = "center";
+      style.size = "text";
       style.sloped = true;
       break;
     }

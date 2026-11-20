@@ -84,7 +84,10 @@ export function parseArrow(
     if (parameter.type === "option") applyArrowOption(parameter, declaration, ParseError);
   }
   const labelStyle = createLabel().style;
-  if (declaration.options.phantom) labelStyle.alignment = "center";
+  if (declaration.options.phantom) {
+    labelStyle.alignment = "center";
+    labelStyle.size = "text";
+  }
 
   // 箭头层的标签选项作为每个标签的共同配置
   for (const parameter of parameters) {

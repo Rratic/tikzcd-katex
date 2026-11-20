@@ -84,7 +84,7 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
 
     const labels = diagram.arrows.flatMap((arrow, index) => arrow.labels.flatMap((content, labelIndex) => {
       if (!content.nodes.length) return [];
-      const formula = buildCell(this, content.nodes, mode, options, arrow.options.phantom ? "text" : "script");
+      const formula = buildCell(this, content.nodes, mode, options, content.style.size);
       const strut = new Span([], [], undefined, {
         display: "inline-block", width: "0", height: em(formula.height + formula.depth),
         verticalAlign: em(-formula.depth),
