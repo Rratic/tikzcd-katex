@@ -88,10 +88,10 @@ function parseDiagramBody(
 
   // 检查端点存在性
   for (const { arrow, token } of arrows) {
-    if (arrow.source.row >= height || arrow.source.column >= width) {
+    if (!cells[arrow.source.row]?.[arrow.source.column]) {
       throw new ParseError("\\arrow source does not exist: " + to_key(arrow.source), token);
     }
-    if (arrow.target.row >= height || arrow.target.column >= width) {
+    if (!cells[arrow.target.row]?.[arrow.target.column]) {
       throw new ParseError("\\arrow target does not exist: " + to_key(arrow.target), token);
     }
   }

@@ -17,7 +17,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.19.1/dist/katex.min.js" integrity="sha384-a1WQdjRj162i159OYq041X6I4K8NenkrI09LlPmiHg0YOb7CR+wJOraXwK9abpnE" crossorigin="anonymous"></script>
 
     <!-- 通过 JsDelivr 加载指定版本 -->
-    <script src="https://cdn.jsdelivr.net/npm/tikzcd-katex@0.2.0/dist/tikzcd-katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tikzcd-katex@0.3.0/dist/tikzcd-katex.min.js"></script>
 
     <!-- 使用 KaTeX auto-render -->
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.19.1/dist/contrib/auto-render.min.js" integrity="sha384-bjyGPfbij8/NDKJhSGZNP/khQVgtHUE5exjm4Ydllo42FwIgYsdLO2lXGmRBf5Mz" crossorigin="anonymous"
@@ -34,7 +34,7 @@
 TikzcdKaTeX.installTikzcd(katex);
 ```
 
-之后可以调用 `katex.render`，但不支持 `katex.renderToString`，因为需要在 DOM 中操作。且 `katex.render` 强制为 `string` 模式，不提供对应的 MathML 标记。
+之后可以调用 `katex.render`，但不支持 `katex.renderToString`，因为需要在 DOM 中操作。且 `katex.render` 强制为 `html` 模式，不提供对应的 MathML 标记。
 
 ---
 

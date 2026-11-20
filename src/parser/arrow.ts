@@ -146,13 +146,16 @@ function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration, Pa
   // 单独处理绝对位置
   if (option.key === "from" || option.key === "to") {
     const end = option.key == "from" ? "source" : "target";
-    if (/^[rdlu]+$/.test(option.key)) {
-      declaration.endpoints[end] = parse_relative_position(option.key);
+    if (!option.value) {
+      throw new ParseError("expects position in \\arrow[" + option.key + "=?]", declaration.token);
+    }
+    if (/^[rdlu]+$/.test(option.value)) {
+      declaration.endpoints[end] = parse_relative_position(option.value);
       return;
     }
-    const position = from_key(option.value?.trim() ?? "");
+    const position = from_key(option.value.trim());
     if (!position) {
-      throw new ParseError("expects position in \\arrow[" + option.key + "=?]", declaration.token);
+      throw new ParseError("invalid position in \\arrow[" + option.key + "=?]", declaration.token);
     }
     declaration.endpoints[end] = {
       kind: "absolute",

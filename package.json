@@ -1,6 +1,6 @@
 {
   "name": "tikzcd-katex",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "A minimal tikzcd extension for KaTeX.",
   "license": "MIT",
@@ -8,10 +8,11 @@
     "dist/",
     "NOTICE.md"
   ],
-  "jsdelivr": "dist/tikzcd-katex.min.js",
+  "main": "dist/tikzcd-katex.min.js",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepack": "npm run typecheck && npm run build"
   },
   "engines": {
     "node": ">=22.18.0"
