@@ -33,6 +33,12 @@ export type ArrowEndStyle =
   // 带钩箭头 (↪)
   "hook";
 
+export interface ArrowBendStyle {
+  is_relative: boolean,
+  in: number,
+  out: number,
+}
+
 /** 箭头的主体、端点和路径样式 */
 export interface ArrowStyle {
   body: ArrowBodyStyle,
@@ -40,7 +46,7 @@ export interface ArrowStyle {
   head: ArrowEndStyle,
   tail: ArrowEndStyle,
   shift: number,
-  bend: number,
+  bends?: ArrowBendStyle,
 }
 
 function default_arrow_style(): ArrowStyle {
@@ -50,8 +56,12 @@ function default_arrow_style(): ArrowStyle {
     head: "normal",
     tail: "none",
     shift: 0,
-    bend: 0,
   };
+}
+
+/** 取得当前曲线设置；尚未设置的角度使用 TikZ 的默认值 */
+function bendStyle(style: ArrowStyle): ArrowBendStyle {
+  return style.bends ??= { is_relative: false, in: 135, out: 45 };
 }
 
 export function applyStyleOption(style: ArrowStyle, option: NamedOption): boolean {
@@ -137,12 +147,26 @@ export function applyStyleOption(style: ArrowStyle, option: NamedOption): boolea
       style.shift = (option.key === "shift left" ? shift : -shift) || 0;
       break;
     }
+    case "in":
+    case "out": {
+      const angle = Number(option.value);
+      if (!Number.isFinite(angle)) return false;
+      bendStyle(style)[option.key] = angle || 0;
+      break;
+    }
+    case "relative": {
+      const value = option.value ?? "true";
+      if (value !== "true" && value !== "false") return false;
+      bendStyle(style).is_relative = value === "true";
+      break;
+    }
     case "bend left":
     case "bend right": {
       const value = option.value;
       const angle = value === undefined ? 30 : Number(value);
       if (!Number.isFinite(angle)) return false;
-      style.bend = (option.key === "bend left" ? angle : -angle) || 0;
+      const out = (option.key === "bend left" ? angle : -angle) || 0;
+      style.bends = { is_relative: true, in: 180 - out, out };
       break;
     }
   }

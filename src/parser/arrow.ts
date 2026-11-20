@@ -80,9 +80,14 @@ export function parseArrow(
   };
 
   // 配置箭头
+  let curved = false;
   for (const parameter of parameters) {
-    if (parameter.type === "option") applyArrowOption(parameter, declaration, ParseError);
+    if (parameter.type !== "option") continue;
+    const applied = applyArrowOption(parameter, declaration, ParseError);
+    if (applied && ["in", "out", "bend left", "bend right"].includes(parameter.key)) curved = true;
   }
+  // relative 只切换角度的解释方式，本身不启用曲线路径
+  if (!curved) delete declaration.options.style.bends;
   const labelStyle = createLabel().style;
   if (declaration.options.phantom) {
     labelStyle.alignment = "center";
@@ -136,11 +141,11 @@ function* readOptionTokens(parser: Parser): Generator<OptionToken<DiagramLabel>>
 }
 
 /** 对 `NamedOption` 执行配置 */
-function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration, ParseError: typeof katex.ParseError): void {
+function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration, ParseError: typeof katex.ParseError): boolean {
   // 单独处理相对位置
   if (/^[rdlu]+$/.test(option.key)) {
     declaration.endpoints.target = parse_relative_position(option.key);
-    return;
+    return true;
   }
 
   // 单独处理绝对位置
@@ -151,7 +156,7 @@ function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration, Pa
     }
     if (/^[rdlu]+$/.test(option.value)) {
       declaration.endpoints[end] = parse_relative_position(option.value);
-      return;
+      return true;
     }
     const position = from_key(option.value.trim());
     if (!position) {
@@ -161,13 +166,13 @@ function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration, Pa
       kind: "absolute",
       address: position!
     };
-    return;
+    return true;
   }
 
   // 单独处理 phantom 模式
   if (option.key === "phantom") {
     declaration.options.phantom = true;
-    return;
+    return true;
   }
 
   // 处理普通配置
@@ -175,6 +180,7 @@ function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration, Pa
   if (!flag) {
     console.warn("invalid or unsupported \\arrow option: \"" + option.key + " " + option.value + "\"");
   }
+  return flag;
 }
 
 /** 将端点位置归一化为绝对位置 */

@@ -180,7 +180,17 @@ TikzcdKaTeX.setTikzcdStyle({
 \end{tikzcd}
 ```
 
-`bend left`、`bend right` 命令会将箭头向行进方向左侧/右侧弯曲一定角度，不设置值时为 30 度：
+`in`、`out` 分别设置箭头终点侧和起点侧的控制点方向，参数为数字，单位为度。默认使用绝对角度：向右为 0 度，向上为 90 度。`in` 表示从终点指向控制点的方向。只设置其中一个时，另一个沿用默认值（`out` 默认 45、`in` 默认 135）。
+
+```tex
+\begin{tikzcd}
+  A \arrow[r, out=90, in=90, "f"] & B
+\end{tikzcd}
+```
+
+`relative` 或 `relative = true` 表示使用相对位置：两个角度为相对于起点到终点的连线。
+
+`bend left=n` 等同于 `relative, out=n, in=180-n`，`bend right=n` 等同于 `relative, out=-n, in=180+n`，不设置值时为 30 度：
 
 ```tex
 \begin{tikzcd}
