@@ -81,14 +81,18 @@ function endPath(style: ArrowEndStyle, endpoint: Point, angle: number, metrics: 
  * @param id 此箭头的唯一标识，用于双线箭身的透明遮罩
  */
 export function drawArrow(document: Document, geometry: ArrowGeometry, style: ArrowStyle, metrics: DiagramMetrics, id: string): SVGGElement {
-  const { start, tip, curve, length } = geometry;
+  const { start, curve, length } = geometry;
+  // TikZ 的 every loop 默认在终点额外缩短 1pt；标签仍使用未缩短的完整路径
+  const tipLength = Math.max(0, length - (style.loop ? metrics.pt : 0));
+  const tipParameter = style.loop ? curve.t_after_length(tipLength) : 1;
+  const tip = style.loop ? curve.point(tipParameter) : geometry.tip;
   const tail = endPath(style.tail, start, curve.tangent(0).angle() + Math.PI, metrics, 1);
-  const head = endPath(style.head, tip, curve.tangent(1).angle(), metrics, -1);
-  if (length < tail.length + head.length) {
+  const head = endPath(style.head, tip, curve.tangent(tipParameter).angle(), metrics, -1);
+  if (tipLength < tail.length + head.length) {
     throw new RangeError("tikzcd arrow endpoints are too close");
   }
 
-  const segment = curve.segment(curve.t_after_length(tail.shorten), curve.t_after_length(length - head.shorten));
+  const segment = curve.segment(curve.t_after_length(tail.shorten), curve.t_after_length(tipLength - head.shorten));
   const body = new Path().move_to(segment[0]);
   if (segment.length === 2) body.line_by(segment[1].sub(segment[0]));
   else body.curve_to(segment[1], segment[2], segment[3]);

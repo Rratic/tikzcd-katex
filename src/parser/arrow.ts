@@ -87,7 +87,7 @@ export function parseArrow(
     if (applied && ["in", "out", "bend left", "bend right"].includes(parameter.key)) curved = true;
   }
   // relative 只切换角度的解释方式，本身不启用曲线路径
-  if (!curved) delete declaration.options.style.bends;
+  if (!curved && !declaration.options.style.loop) delete declaration.options.style.bends;
   const labelStyle = createLabel().style;
   if (declaration.options.phantom) {
     labelStyle.alignment = "center";
@@ -185,9 +185,10 @@ function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration, Pa
 
 /** 将端点位置归一化为绝对位置 */
 export function resolveArrow(declaration: ArrowDeclaration, origin: CellAddress): DiagramArrow {
+  const source = resolve(origin, declaration.endpoints.source);
   const arrow = createArrow(
-    resolve(origin, declaration.endpoints.source),
-    resolve(origin, declaration.endpoints.target),
+    source,
+    declaration.options.style.loop ? { ...source } : resolve(origin, declaration.endpoints.target),
     declaration.options,
   );
   arrow.labels = declaration.labels;

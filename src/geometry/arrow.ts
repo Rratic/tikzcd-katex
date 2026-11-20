@@ -29,7 +29,7 @@ export interface ArrowGeometry {
 }
 
 /**
- * 沿起终点连线的法向量整体平移箭头
+ * 沿起终点连线的法向量整体平移箭头，端点重合时使用起点切线
  *
  * @param geometry 已完成节点边界裁剪的箭头几何
  * @param distance 与几何使用相同单位的距离，正数向行进方向左侧平移
@@ -37,7 +37,9 @@ export interface ArrowGeometry {
  */
 export function shiftArrow(geometry: ArrowGeometry, distance: number): ArrowGeometry {
   if (distance === 0) return geometry;
-  const offset = geometry.tip.sub(geometry.start).norm().mul(distance);
+  const chord = geometry.tip.sub(geometry.start);
+  const direction = chord.length() > EPSILON ? chord : geometry.curve.tangent(0);
+  const offset = direction.norm().mul(distance);
   const points = geometry.curve.segment(0, 1).map(point => point.add(offset));
   const curve = points.length === 2
     ? new Line(points[0]!, points[1]!)
@@ -99,8 +101,10 @@ function extendMargin(box: CellBox, metrics: DiagramMetrics) {
  * @param source 起点包含留白的边界
  * @param target 终点包含留白的边界
  * @param bends TikZ 坐标系中逆时针为正的出入射角，以及是否相对起终点连线
+ * @param looseness 控制点距离相对于默认值的倍数
+ * @param minDistance 控制点与其端点之间的最小距离，与节点坐标使用相同单位
  */
-function layoutBend(line: Line, source: RoundedRectangle, target: RoundedRectangle, bends: ArrowBendStyle): ArrowGeometry {
+function layoutBend(line: Line, source: RoundedRectangle, target: RoundedRectangle, bends: ArrowBendStyle, looseness = 1, minDistance = 0): ArrowGeometry {
   // SVG 的纵轴向下，角度符号与 TikZ 相反
   const out = -(bends.out % 360) * Math.PI / 180, incoming = -(bends.in % 360) * Math.PI / 180;
   const boundary = (anchor: Point, shape: RoundedRectangle, direction: number) => {
@@ -111,9 +115,10 @@ function layoutBend(line: Line, source: RoundedRectangle, target: RoundedRectang
   const start = boundary(line.point(0), source, reference + out);
   const tip = boundary(line.point(1), target, reference + incoming);
   const vector = tip.sub(start), distance = vector.length();
-  if (distance <= EPSILON) throw new RangeError("tikzcd arrow endpoints are too close");
+  if (distance <= EPSILON && minDistance === 0) throw new RangeError("tikzcd arrow endpoints are too close");
   // TikZ 默认 looseness=1，控制距离为边界锚点间距离的 0.3915 倍
-  const control = 0.3915 * distance, direction = bends.is_relative ? vector.angle() : 0;
+  const control = Math.max(looseness * 0.3915 * distance, minDistance);
+  const direction = bends.is_relative ? vector.angle() : 0;
   const curve = new CubicBezier(
     start, start.add(polar(control, direction + out)),
     tip.add(polar(control, direction + incoming)), tip,
@@ -128,11 +133,17 @@ function layoutBend(line: Line, source: RoundedRectangle, target: RoundedRectang
  * @param to 终点内容框
  * @param metrics 与内容框使用相同单位的图式度量
  * @param bends 曲线的出入射角与相对模式；不设置时使用直线
+ * @param loop 是否忽略终点并返回起点，以 TikZ 的默认松弛度和最小距离构建自环
  */
-export function layoutArrow(from: CellNode, to: CellNode, metrics: DiagramMetrics, bends?: ArrowBendStyle): ArrowGeometry {
+export function layoutArrow(from: CellNode, to: CellNode, metrics: DiagramMetrics, bends?: ArrowBendStyle, loop = false): ArrowGeometry {
   // 连接数学轴上的锚点
   const source = extendMargin(from, metrics), target = extendMargin(to, metrics);
   const origin = new Point(source.centre.x, from.baseline - metrics.axis);
+  if (loop) {
+    // 自环没有不同的起终点连线，角度直接使用画布坐标系；5mm 换算为 TeX pt
+    const angles = { ...(bends ?? { in: 135, out: 45 }), is_relative: false };
+    return layoutBend(new Line(origin, origin), source, source, angles, 8, 5 * 72.27 / 25.4 * metrics.pt);
+  }
   const end = new Point(target.centre.x, to.baseline - metrics.axis);
   const line = new Line(origin, end);
   if (line.width <= EPSILON) throw new RangeError("tikzcd arrow endpoints are too close");

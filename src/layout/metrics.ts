@@ -1,5 +1,7 @@
 /** 图式的数学字体度量和节点内边距 */
 export interface DiagramMetrics {
+  /** 一个 TeX pt 在当前坐标单位中的长度 */
+  pt: number;
   axis: number;
   xHeight: number;
   lineWidth: number;
@@ -16,6 +18,7 @@ export interface DiagramMetrics {
  */
 export function diagramMetrics(font: { axisHeight: number; xHeight: number; defaultRuleThickness: number }, scale: number): DiagramMetrics {
   return {
+    pt: scale / 10,
     axis: font.axisHeight * scale,
     xHeight: font.xHeight * scale,
     lineWidth: font.defaultRuleThickness * scale,
@@ -27,6 +30,7 @@ export function diagramMetrics(font: { axisHeight: number; xHeight: number; defa
 /** 将所有长度同时换算到另一单位 */
 export function scaleMetrics(metrics: DiagramMetrics, factor: number): DiagramMetrics {
   return {
+    pt: metrics.pt * factor,
     axis: metrics.axis * factor,
     xHeight: metrics.xHeight * factor,
     lineWidth: metrics.lineWidth * factor,

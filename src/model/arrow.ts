@@ -45,7 +45,11 @@ export interface ArrowStyle {
   dash: ArrowDashStyle,
   head: ArrowEndStyle,
   tail: ArrowEndStyle,
+  /** 忽略目标格，回到起点 */
+  loop: boolean,
+  /** 沿垂直方向的移动 */
   shift: number,
+  /** 出、入角度控制 */
   bends?: ArrowBendStyle,
 }
 
@@ -55,6 +59,7 @@ function default_arrow_style(): ArrowStyle {
     dash: "solid",
     head: "normal",
     tail: "none",
+    loop: false,
     shift: 0,
   };
 }
@@ -158,6 +163,20 @@ export function applyStyleOption(style: ArrowStyle, option: NamedOption): boolea
       const value = option.value ?? "true";
       if (value !== "true" && value !== "false") return false;
       bendStyle(style).is_relative = value === "true";
+      break;
+    }
+    case "loop": {
+      style.loop = true;
+      bendStyle(style);
+      break;
+    }
+    case "loop above":
+    case "loop below":
+    case "loop left":
+    case "loop right": {
+      const out = { "loop above": 105, "loop below": 285, "loop left": 195, "loop right": 15 }[option.key];
+      style.loop = true;
+      style.bends = { is_relative: false, in: out - 30, out };
       break;
     }
     case "bend left":

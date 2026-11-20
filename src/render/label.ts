@@ -1,4 +1,5 @@
 import type { ArrowGeometry, CellBox } from "../geometry/arrow";
+import { EPSILON } from "../geometry/curve";
 import type { LabelStyle } from "../model/arrow";
 import type { DiagramMetrics } from "../layout/metrics";
 import { setStyle } from "./dom";
@@ -21,6 +22,12 @@ function unit_px(value: number): string {
   return Number(value.toFixed(6)) + "px";
 }
 
+/** 自环折返点的切线可能为零，此时沿用出发方向定位标签 */
+function labelTangent(geometry: ArrowGeometry, pos: number) {
+  const tangent = geometry.curve.tangent(pos);
+  return tangent.length() > EPSILON ? tangent : geometry.curve.tangent(0);
+}
+
 /**
  * 按 TikZ 的侧边或角点锚定标签，并保持旋转后的文字正立
  *
@@ -31,7 +38,7 @@ function unit_px(value: number): string {
  */
 function positionLabel(label: HTMLElement, geometry: ArrowGeometry, labelStyle: LabelStyle, padding: number): CellBox {
   const pos = labelStyle.pos;
-  const tangent = geometry.curve.tangent(pos);
+  const tangent = labelTangent(geometry, pos);
   const norm = tangent.norm();
   const side = labelStyle.alignment === "center" ? 0 : labelStyle.alignment === "swap" ? -1 : 1;
 
@@ -71,7 +78,7 @@ export function renderLabels(document: Document, labels: readonly MountedLabel[]
   const masked: { box: CellBox; angle: number }[] = [];
   for (const { element, style } of labels) {
     const box = positionLabel(element, geometry, style, padding + metrics.lineWidth / 2);
-    if (style.mask) masked.push({ box, angle: style.sloped ? geometry.curve.tangent(style.pos).proper_angle() : 0 });
+    if (style.mask) masked.push({ box, angle: style.sloped ? labelTangent(geometry, style.pos).proper_angle() : 0 });
   }
   if (!masked.length) return;
 

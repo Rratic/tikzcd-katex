@@ -204,3 +204,5 @@ TikzcdKaTeX.setTikzcdStyle({
       & Z
 \end{tikzcd}
 ```
+
+`loop` 会忽略目标格，让箭头返回起点。`loop above`、`loop below`、`loop left`、`loop right` 分别在格子的上、下、左、右侧绘制自环，也可以用 `in`、`out` 参数自定义方向。
