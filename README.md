@@ -1,4 +1,7 @@
 # Tikzcd-KaTeX
+[![npm](https://img.shields.io/npm/v/tikzcd-katex.svg)](https://www.npmjs.com/package/tikzcd-katex)
+[![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
+
 为 [KaTeX](https://katex.org/) 提供基础的 [`tikzcd`](https://tikz.dev/tikz-cd/) 环境支持。
 
 项目移植了部分来自 [quiver](https://github.com/varkor/quiver) 的代码，详见 [NOTICE](NOTICE.md).

@@ -9,6 +9,7 @@
     "dist/",
     "src/",
     "scripts/",
+    "tsconfig.json",
     "CHANGELOG.md",
     "NOTICE.md"
   ],
