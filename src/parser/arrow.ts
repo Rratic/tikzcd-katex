@@ -171,7 +171,10 @@ function applyArrowOption(option: NamedOption, declaration: ArrowDeclaration, Pa
   }
 
   // 处理普通配置
-  applyStyleOption(declaration.options.style, option);
+  const flag = applyStyleOption(declaration.options.style, option);
+  if (!flag) {
+    console.warn("invalid or unsupported \\arrow option: \"" + option.key + " " + option.value + "\"");
+  }
 }
 
 /** 将端点位置归一化为绝对位置 */

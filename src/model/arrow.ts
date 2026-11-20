@@ -54,7 +54,7 @@ function default_arrow_style(): ArrowStyle {
   };
 }
 
-export function applyStyleOption(style: ArrowStyle, option: NamedOption): void {
+export function applyStyleOption(style: ArrowStyle, option: NamedOption): boolean {
   switch (option.key) {
     case "dashed": style.dash = "dashed"; break;
     case "to head": style.head = "normal"; break;
@@ -132,21 +132,21 @@ export function applyStyleOption(style: ArrowStyle, option: NamedOption): void {
     case "shift right": {
       const value = option.value;
       const shift = value === undefined ? 1 : Number(value);
-      if (Number.isFinite(shift)) {
-        style.shift = (option.key === "shift left" ? shift : -shift) || 0;
-      }
+      if (!Number.isFinite(shift)) return false;
+      // 统一 0 与 -0
+      style.shift = (option.key === "shift left" ? shift : -shift) || 0;
       break;
     }
     case "bend left":
     case "bend right": {
       const value = option.value;
       const angle = value === undefined ? 30 : Number(value);
-      if (Number.isFinite(angle)) {
-        style.bend = option.key === "bend left" ? angle : -angle;
-      }
+      if (!Number.isFinite(angle)) return false;
+      style.bend = (option.key === "bend left" ? angle : -angle) || 0;
       break;
     }
   }
+  return true;
 }
 
 /////////////////////////////
