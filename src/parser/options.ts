@@ -8,9 +8,7 @@ export interface NamedOption {
 }
 
 /**
- * 形如 `"formula" option` 的选项
- *
- * `'` 被视作正常的选项，不进行特殊处理
+ * 形如 `"formula" option` 的选项，支持 `'` 选项
  */
 export interface QuotedOption<Value> {
   type: "quoted";
@@ -83,6 +81,11 @@ export function parseOptions<Value>(source: string | Iterable<OptionToken<Value>
     const node: QuotedOption<Value | string> = { type: "quoted", value, options: [] };
     advance();
     spaces();
+    while (current.value === "'") {
+      node.options.push({ type: "option", key: "'" });
+      advance();
+      spaces();
+    }
     if (current.value === "{") {
       advance();
       while (true) {

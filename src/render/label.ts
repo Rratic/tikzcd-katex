@@ -32,8 +32,11 @@ function unit_px(value: number): string {
  */
 function positionLabel(label: HTMLElement, geometry: ArrowGeometry, labelStyle: LabelStyle, padding: number): CellBox {
   const vector = geometry.tip.sub(geometry.start);
-  const rotation = labelStyle.sloped ? vector.proper_angle() : 0;
-  const norm = labelStyle.sloped ? new Point(Math.sin(rotation), -Math.cos(rotation)) : vector.norm();
+
+  // 切向量
+  // 为之后非直线预留
+  const tangent = vector;
+  const norm = tangent.norm();
 
   const pos = labelStyle.pos;
   const side = labelStyle.alignment === "center" ? 0 : labelStyle.alignment === "swap" ? -1 : 1;
@@ -41,15 +44,10 @@ function positionLabel(label: HTMLElement, geometry: ArrowGeometry, labelStyle: 
   // 获取标签渲染结果的大小
   const style = label.ownerDocument.defaultView!.getComputedStyle(label);
   const width = parseFloat(style.width), height = parseFloat(style.height);
-  const offset = labelStyle.sloped
-    ? norm.mul(side * (height / 2 + padding))
-    : new Point(
-      Math.abs(norm.x) > 0.05 ? Math.sign(norm.x) * side * (width / 2 + padding) : 0,
-      Math.abs(norm.y) > 0.05 ? Math.sign(norm.y) * side * (height / 2 + padding) : 0,
-    );
+  const distance = (labelStyle.sloped ? height : Math.abs(norm.x) * width + Math.abs(norm.y) * height) / 2 + padding;
 
   // 计算标签中心位置
-  const position = geometry.start.add(vector.mul(pos)).add(offset);
+  const position = geometry.start.add(vector.mul(pos)).add(norm.mul(side * distance));
 
   const x = position.x - width / 2;
   const y = position.y - height / 2;
@@ -57,6 +55,7 @@ function positionLabel(label: HTMLElement, geometry: ArrowGeometry, labelStyle: 
   setStyle(label, "left", unit_px(x));
   setStyle(label, "top", unit_px(y));
   if (labelStyle.sloped) {
+    const rotation = tangent.proper_angle();
     setStyle(label, "transform", "rotate(" + rotation + "rad)");
   }
   setStyle(label, "visibility", "visible");
