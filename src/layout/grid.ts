@@ -1,3 +1,5 @@
+import type { DiagramMetrics } from "./metrics";
+
 /** 单元格度量 */
 export interface CellMetrics {
   width: number;
@@ -5,28 +7,22 @@ export interface CellMetrics {
   depth: number;
 }
 
-export interface GridSettings {
-  /** 相邻两列内容框之间的间距 */
+export interface GridSettings extends DiagramMetrics {
+  /** 相邻两列带内边距的节点之间的间距 */
   columnGap: number;
-  /** 相邻两行的下降区与上升区之间的净距 */
+  /** 相邻两行带内边距的节点之间的净距 */
   rowGap: number;
-  /** 每行在基线上方保留的最小高度 */
-  minHeight: number;
-  /** 每行在基线下方保留的最小深度 */
-  minDepth: number;
-  /** 对齐的轴在外层基线上方的高度 */
-  axis: number;
 }
 
 /** 计算布局 */
 export function layoutGrid(rows: CellMetrics[][], settings: GridSettings) {
   const columns: number[] = [];
   const tracks = rows.map(row => {
-    let height = settings.minHeight, depth = settings.minDepth;
+    let height = settings.innerYSep, depth = settings.innerYSep;
     row.forEach((cell, column) => {
-      columns[column] = Math.max(columns[column] ?? 0, cell.width);
-      height = Math.max(height, cell.height);
-      depth = Math.max(depth, cell.depth);
+      columns[column] = Math.max(columns[column] ?? 0, cell.width + 2 * settings.innerXSep);
+      height = Math.max(height, cell.height + settings.innerYSep);
+      depth = Math.max(depth, cell.depth + settings.innerYSep);
     });
     return { height, depth };
   });
@@ -50,6 +46,9 @@ export function layoutGrid(rows: CellMetrics[][], settings: GridSettings) {
     total += tracks[index]!.height + tracks[index]!.depth;
     return result;
   });
-  const height = rows.length ? total / 2 + settings.axis : 0;
+
+  // 单行沿单元格基线对齐
+  // 多行沿整个矩阵的中心对齐
+  const height = rows.length === 1 ? tracks[0]!.height : total / 2;
   return { columns, tracks, cells, width, total, height, depth: total - height };
 }

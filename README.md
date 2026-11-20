@@ -45,7 +45,6 @@ TikzcdKaTeX.installTikzcd(katex);
 TikzcdKaTeX.setTikzcdStyle({
   "row sep": 1.8,
   "column sep": 2.4,
-  "arrow pad": 0.24, // 自定义量，计算箭头起始点时的间距
 });
 ```
 

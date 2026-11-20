@@ -22,6 +22,12 @@ export class Path {
     return this;
   }
 
+  /** 添加绝对三次 Bezier 曲线 */
+  curve_to(first: Point, second: Point, end: Point): this {
+    this.commands.push(`C ${first.x} ${first.y} ${second.x} ${second.y} ${end.x} ${end.y}`);
+    return this;
+  }
+
   /**
    * 添加相对椭圆弧
    *

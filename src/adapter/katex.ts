@@ -83,7 +83,7 @@ export interface BuildOptions {
   havingStyle(style: BuildOptions["style"]): BuildOptions;
 
   /** 获取当前字号对应的字体度量 */
-  fontMetrics(): { axisHeight: number };
+  fontMetrics(): { axisHeight: number; xHeight: number; defaultRuleThickness: number };
 }
 
 /** HTML 节点 */

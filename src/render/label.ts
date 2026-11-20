@@ -1,5 +1,7 @@
 import type { ArrowGeometry, CellBox } from "../geometry/arrow";
 import type { LabelStyle } from "../model/arrow";
+import type { DiagramMetrics } from "../layout/metrics";
+import { Point } from "../geometry/point";
 import { setStyle } from "./dom";
 
 const SVG = "http://www.w3.org/2000/svg";
@@ -20,10 +22,18 @@ function unit_px(value: number): string {
   return Number(value.toFixed(6)) + "px";
 }
 
-/** 定位标签 */
-function positionLabel(label: HTMLElement, geometry: ArrowGeometry, labelStyle: LabelStyle, em: number): CellBox {
+/**
+ * 按 TikZ 的侧边或角点锚定标签，并保持旋转后的文字正立
+ *
+ * @param label 已构建公式的标签元素
+ * @param geometry 箭头的裁剪后几何
+ * @param labelStyle 标签的位置和朝向设置
+ * @param padding 标签内容与锚点之间的留白
+ */
+function positionLabel(label: HTMLElement, geometry: ArrowGeometry, labelStyle: LabelStyle, padding: number): CellBox {
   const vector = geometry.tip.sub(geometry.start);
-  const norm = vector.norm();
+  const rotation = labelStyle.sloped ? vector.proper_angle() : 0;
+  const norm = labelStyle.sloped ? new Point(Math.sin(rotation), -Math.cos(rotation)) : vector.norm();
 
   const pos = labelStyle.pos;
   const side = labelStyle.alignment === "center" ? 0 : labelStyle.alignment === "swap" ? -1 : 1;
@@ -31,10 +41,15 @@ function positionLabel(label: HTMLElement, geometry: ArrowGeometry, labelStyle: 
   // 获取标签渲染结果的大小
   const style = label.ownerDocument.defaultView!.getComputedStyle(label);
   const width = parseFloat(style.width), height = parseFloat(style.height);
-  const distance = (labelStyle.sloped ? height : Math.abs(norm.x) * width + Math.abs(norm.y) * height) / 2 + em * 0.12;
+  const offset = labelStyle.sloped
+    ? norm.mul(side * (height / 2 + padding))
+    : new Point(
+      Math.abs(norm.x) > 0.05 ? Math.sign(norm.x) * side * (width / 2 + padding) : 0,
+      Math.abs(norm.y) > 0.05 ? Math.sign(norm.y) * side * (height / 2 + padding) : 0,
+    );
 
   // 计算标签中心位置
-  const position = geometry.start.add(vector.mul(pos)).add(norm.mul(side * distance));
+  const position = geometry.start.add(vector.mul(pos)).add(offset);
 
   const x = position.x - width / 2;
   const y = position.y - height / 2;
@@ -42,18 +57,27 @@ function positionLabel(label: HTMLElement, geometry: ArrowGeometry, labelStyle: 
   setStyle(label, "left", unit_px(x));
   setStyle(label, "top", unit_px(y));
   if (labelStyle.sloped) {
-    const rotation = vector.proper_angle();
     setStyle(label, "transform", "rotate(" + rotation + "rad)");
   }
   setStyle(label, "visibility", "visible");
   return { x, y, width, height };
 }
 
-/** 定位一个箭头的所有标签，并生成它们共用的箭线遮罩 */
-export function renderLabels(document: Document, labels: readonly MountedLabel[], geometry: ArrowGeometry, em: number, viewport: LabelMaskViewport): SVGMaskElement | undefined {
+/**
+ * 定位一个箭头的所有标签，并生成它们共用的箭线遮罩
+ *
+ * @param document 标签和 SVG 所属文档
+ * @param labels 已构建的标签及其样式
+ * @param geometry 箭头的裁剪后几何
+ * @param metrics 与几何使用相同单位的图表度量
+ * @param viewport 遮罩的标识及覆盖范围
+ */
+export function renderLabels(document: Document, labels: readonly MountedLabel[], geometry: ArrowGeometry, metrics: DiagramMetrics, viewport: LabelMaskViewport): SVGMaskElement | undefined {
+  const padding = 0.5 * metrics.xHeight;
+  const margin = metrics.xHeight * 2;
   const masked: { box: CellBox; sloped: boolean }[] = [];
   for (const { element, style } of labels) {
-    const box = positionLabel(element, geometry, style, em);
+    const box = positionLabel(element, geometry, style, padding + metrics.lineWidth / 2);
     if (style.mask) masked.push({ box, sloped: style.sloped });
   }
   if (!masked.length) return;
@@ -61,27 +85,28 @@ export function renderLabels(document: Document, labels: readonly MountedLabel[]
   // 只裁剪此箭头，避免依赖页面背景色或遮住交叉的其他箭头
   const mask = document.createElementNS(SVG, "mask");
   mask.id = viewport.id;
+  mask.setAttribute("stroke", "none");
   mask.setAttribute("maskUnits", "userSpaceOnUse");
-  mask.setAttribute("x", String(-em));
-  mask.setAttribute("y", String(-em));
-  mask.setAttribute("width", String(viewport.width + 2 * em));
-  mask.setAttribute("height", String(viewport.height + 2 * em));
+  mask.setAttribute("x", String(-margin));
+  mask.setAttribute("y", String(-margin));
+  mask.setAttribute("width", String(viewport.width + 2 * margin));
+  mask.setAttribute("height", String(viewport.height + 2 * margin));
   const background = document.createElementNS(SVG, "rect");
-  background.setAttribute("x", String(-em));
-  background.setAttribute("y", String(-em));
-  background.setAttribute("width", String(viewport.width + 2 * em));
-  background.setAttribute("height", String(viewport.height + 2 * em));
+  background.setAttribute("x", String(-margin));
+  background.setAttribute("y", String(-margin));
+  background.setAttribute("width", String(viewport.width + 2 * margin));
+  background.setAttribute("height", String(viewport.height + 2 * margin));
   background.style.fill = "white";
   mask.appendChild(background);
   // 同一箭头的所有遮挡区域共享一个 mask，避免后一个标签覆盖前一个
   for (const { box, sloped } of masked) {
     const rect = document.createElementNS(SVG, "rect");
-    rect.setAttribute("x", String(box.x - em * 0.12));
-    rect.setAttribute("y", String(box.y - em * 0.12));
-    rect.setAttribute("width", String(box.width + em * 0.24));
-    rect.setAttribute("height", String(box.height + em * 0.24));
+    rect.setAttribute("x", String(box.x - padding));
+    rect.setAttribute("y", String(box.y - padding));
+    rect.setAttribute("width", String(box.width + 2 * padding));
+    rect.setAttribute("height", String(box.height + 2 * padding));
     if (sloped) {
-      const angle = Math.atan2(geometry.tip.y - geometry.start.y, geometry.tip.x - geometry.start.x) * 180 / Math.PI;
+      const angle = geometry.tip.sub(geometry.start).proper_angle() * 180 / Math.PI;
       rect.setAttribute("transform", "rotate(" + angle + " " + (box.x + box.width / 2) + " " + (box.y + box.height / 2) + ")");
     }
     rect.style.fill = "black";

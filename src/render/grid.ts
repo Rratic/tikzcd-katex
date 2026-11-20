@@ -3,6 +3,7 @@ import type { FormulaNode, HtmlBuilder, SpanConstructor } from "../adapter/katex
 import { buildCell } from "../adapter/builders";
 import { to_key } from "../model/address";
 import { layoutGrid } from "../layout/grid";
+import { diagramMetrics } from "../layout/metrics";
 
 /** 全局行间距，单位为 em */
 let ROW_SEP = 1.8;
@@ -54,10 +55,9 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
     const textOptions = options.havingStyle(options.style.text());
     const scale = textOptions.sizeMultiplier / options.sizeMultiplier;
     const settings = {
+      ...diagramMetrics(textOptions.fontMetrics(), scale),
       columnGap: COLUMN_SEP * scale,
       rowGap: ROW_SEP * scale,
-      minHeight: 0.7 * scale, minDepth: 0.3 * scale,
-      axis: options.fontMetrics().axisHeight,
     };
     const metrics = native.map(row => row.map(cell => ({ width: 0, height: cell.height, depth: cell.depth })));
     const layout = layoutGrid(metrics, settings);
@@ -75,7 +75,6 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
         top: em(layout.cells[r]![c]!.y),
       });
       span.setAttribute("data-tikzcd-cell", to_key(cell));
-      if (!cell.content.length) span.setAttribute("data-tikzcd-empty", "true");
       return span;
     }));
 
@@ -117,7 +116,7 @@ export function gridBuilder(Span: SpanConstructor): HtmlBuilder {
       labels: labels.map(label => label.style),
     }))));
     root.setAttribute("data-tikzcd-layout", JSON.stringify({
-      cells: metrics, settings, cellAxis: textOptions.fontMetrics().axisHeight * scale,
+      cells: metrics, settings,
     }));
 
     return root;

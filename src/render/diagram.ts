@@ -1,5 +1,5 @@
 import { layoutArrow } from "../geometry/arrow";
-import type { CellBox } from "../geometry/arrow";
+import type { CellNode } from "../geometry/arrow";
 import { drawArrow } from "./arrow";
 import { setStyle } from "./dom";
 import { renderLabels } from "./label";
@@ -7,6 +7,7 @@ import { from_key, to_key } from "../model/address";
 import type { ArrowOptions, DiagramArrow, LabelStyle } from "../model/arrow";
 import { layoutGrid } from "../layout/grid";
 import type { CellMetrics, GridSettings } from "../layout/grid";
+import { scaleMetrics } from "../layout/metrics";
 
 const ROOT = "[data-tikzcd]";
 const SVG = "http://www.w3.org/2000/svg";
@@ -24,7 +25,7 @@ interface MountedDiagram {
   labels: Map<string, HTMLElement>;
   svg?: SVGSVGElement;
   grid: HTMLElement;
-  metrics: { cells: CellMetrics[][]; settings: GridSettings; cellAxis: number };
+  metrics: { cells: CellMetrics[][]; settings: GridSettings };
   depth: number;
   error?: string;
 }
@@ -63,40 +64,39 @@ function renderDiagram(diagram: MountedDiagram): void {
     setStyle(cell, "top", unit(box.y));
   }
   if (!svg) return;
-  const rect = root.getBoundingClientRect();
-  if (!rect.width || !rect.height) {
+  const width = layout.width * em, height = layout.total * em;
+  if (!width || !height) {
     svg.style.display = "none";
     for (const label of labels.values()) setStyle(label, "visibility", "hidden");
     return;
   }
-  const style = document.defaultView!.getComputedStyle(root);
-  const width = parseFloat(style.width), height = parseFloat(style.height);
-  // 将 viewport 坐标转为 SVG 坐标
-  const sx = rect.width / width, sy = rect.height / height;
-  const boxes = new Map<string, CellBox>();
+  const drawingMetrics = scaleMetrics(metrics.settings, em);
+  const boxes = new Map<string, CellNode>();
   for (const cell of cells) {
-    const box = cell.getBoundingClientRect();
-    const empty = cell.dataset.tikzcdEmpty === "true";
+    const { row, column } = from_key(cell.dataset.tikzcdCell!)!;
+    const box = layout.cells[row]![column]!;
+    // 与单元格共用布局坐标，避免 DOM 像素取整使箭头倾斜
     boxes.set(cell.dataset.tikzcdCell!, {
-      x: (box.x - rect.x) / sx,
-      y: (box.y - rect.y) / sy - (empty ? em * metrics.cellAxis : 0),
-      width: empty ? 0 : box.width / sx,
-      height: empty ? 0 : box.height / sy,
+      x: box.x * em,
+      y: box.y * em,
+      width: box.width * em,
+      height: (box.height + box.depth) * em,
+      baseline: box.baseline * em,
     });
   }
   try {
     const defs = document.createElementNS(SVG, "defs");
     const paths = arrows.flatMap((arrow, index) => {
-      const geometry = layoutArrow(boxes.get(to_key(arrow.source))!, boxes.get(to_key(arrow.target))!, em);
+      const geometry = layoutArrow(boxes.get(to_key(arrow.source))!, boxes.get(to_key(arrow.target))!, drawingMetrics);
       const arrowLabels = arrow.labels.flatMap((style, labelIndex) => {
         const element = labels.get(index + ":" + labelIndex);
         return element ? [{ element, style }] : [];
       });
-      const mask = renderLabels(document, arrowLabels, geometry, em, {
+      const mask = renderLabels(document, arrowLabels, geometry, drawingMetrics, {
         id: "tikzcd-label-" + diagram.id + "-" + index, width, height,
       });
       if (arrow.phantom) return [];
-      const group = drawArrow(document, geometry, arrow.style, em);
+      const group = drawArrow(document, geometry, arrow.style, drawingMetrics);
       if (mask) {
         defs.appendChild(mask);
         group.setAttribute("mask", "url(#" + mask.id + ")");

@@ -4,22 +4,19 @@ import { Line } from "./curve";
 import type { CurvePoint } from "./curve";
 import { Point } from "./point";
 import { RoundedRectangle } from "./shape";
+import type { DiagramMetrics } from "../layout/metrics";
 
-/** 箭头的间距，单位为 em */
-let ARROW_PADDING = 0.24;
-
-export function setArrowPadding(padding: number): void {
-  if (Number.isFinite(padding) && padding >= 0) {
-    ARROW_PADDING = padding;
-  }
-}
-
-/** DOM 测量后的内容框 */
+/** 布局中的内容框 */
 export interface CellBox {
   x: number;
   y: number;
   width: number;
   height: number;
+}
+
+/** 包含基线位置的单元格内容框 */
+export interface CellNode extends CellBox {
+  baseline: number;
 }
 
 /** 裁剪后的箭头几何信息，不包含端点样式或 SVG 路径 */
@@ -33,7 +30,7 @@ export interface ArrowGeometry {
 /**
  * 从边界交点中选择箭头的端点
  *
- * @param curve 连接两个内容框中心的直线
+ * @param curve 连接两个节点数学轴锚点的直线
  * @param shape 包含留白的圆角边界
  * @param preferMin 取最小/最大参数
  */
@@ -62,20 +59,18 @@ function findEndpoint(curve: Line, shape: RoundedRectangle, preferMin: boolean):
 }
 
 /**
- * 内容框外扩 `ARROW_PADDING` 大小的留白，并以留白为圆角半径
+ * 在内容框外加入横纵内边距和半个笔画的边界留白
  *
  * @param box 目标内容框
- * @param em 当前环境 1em 对应长度
+ * @param metrics 与内容框使用相同单位的图式度量
  */
-function extendMargin(box: CellBox, em: number) {
-  const padding = em * ARROW_PADDING;
-
-  // 零大小不加留白
-  const empty = box.width == 0 && box.height == 0;
+function extendMargin(box: CellBox, metrics: DiagramMetrics) {
+  const x = metrics.innerXSep + metrics.lineWidth / 2;
+  const y = metrics.innerYSep + metrics.lineWidth / 2;
   return new RoundedRectangle(
     new Point(box.x + box.width / 2, box.y + box.height / 2),
-    new Point(box.width + (empty ? 0 : padding * 2), box.height + (empty ? 0 : padding * 2)),
-    empty ? 0 : padding,
+    new Point(box.width + x * 2, box.height + y * 2),
+    0,
   );
 }
 
@@ -84,20 +79,20 @@ function extendMargin(box: CellBox, em: number) {
  *
  * @param from 起点内容框
  * @param to 终点内容框
- * @param em 当前环境 1em 对应长度
+ * @param metrics 与内容框使用相同单位的图式度量
  */
-export function layoutArrow(from: CellBox, to: CellBox, em: number): ArrowGeometry {
-  const padding = em * ARROW_PADDING;
-  const source = extendMargin(from, em), target = extendMargin(to, em);
-  const curve = new Line(source.centre, target.centre);
+export function layoutArrow(from: CellNode, to: CellNode, metrics: DiagramMetrics): ArrowGeometry {
+  // 连接数学轴上的锚点
+  const source = extendMargin(from, metrics), target = extendMargin(to, metrics);
+  const curve = new Line(
+    new Point(source.centre.x, from.baseline - metrics.axis),
+    new Point(target.centre.x, to.baseline - metrics.axis),
+  );
 
   // 起始点
   const first = findEndpoint(curve, source, true), last = findEndpoint(curve, target, false);
-  let startLength = curve.arc_length(first.t);
-  let endLength = curve.arc_length(last.t);
-  // 单独处理零大小
-  if (source.empty()) startLength += padding;
-  if (target.empty()) endLength += padding;
+  const startLength = curve.arc_length(first.t);
+  const endLength = curve.arc_length(last.t);
   if (endLength <= startLength) {
     throw new RangeError("tikzcd arrow endpoints are too close");
   }
