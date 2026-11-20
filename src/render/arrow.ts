@@ -1,5 +1,3 @@
-// 移植自 [quiver](https://github.com/varkor/quiver)
-
 import type { ArrowGeometry } from "../geometry/arrow";
 import { Point, polar } from "../geometry/point";
 import type { ArrowEndStyle, ArrowStyle } from "../model/arrow";

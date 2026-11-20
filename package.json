@@ -4,11 +4,14 @@
   "type": "module",
   "description": "A minimal tikzcd extension for KaTeX.",
   "license": "MIT",
+  "main": "dist/tikzcd-katex.js",
   "files": [
     "dist/",
+    "src/",
+    "scripts/",
+    "CHANGELOG.md",
     "NOTICE.md"
   ],
-  "main": "dist/tikzcd-katex.min.js",
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",

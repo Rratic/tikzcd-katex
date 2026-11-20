@@ -1,9 +1,20 @@
 import assert from "node:assert/strict";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+const manifest = await readFile(new URL("../package.json", import.meta.url), "utf8");
+const { name, version } = JSON.parse(manifest);
+const banner = "/*!\n * " + [
+  `${name} v${version}`,
+  "@license MIT",
+  "",
+  "Third-party notices:",
+  "",
+  "Partly adapted from [Quiver](https://github.com/varkor/quiver/commit/2f289ecbae9b7e5a473e04b924750c538ed5c4cf) under MIT license.",
+].join("\n").replace(/\r?\n/g, "\n * ") + "\n */";
+
 const result = await build({
   absWorkingDir: root,
   entryPoints: ["src/index.ts"],
@@ -12,7 +23,8 @@ const result = await build({
   globalName: "TikzcdKaTeX",
   platform: "browser",
   target: "es2020",
-  minify: true,
+  minify: false,
+  banner: { js: banner },
   legalComments: "inline",
   metafile: true,
   write: false,
@@ -27,4 +39,4 @@ assert.ok(Object.keys(result.metafile.inputs).every(input => input.startsWith("s
 // 导出到 dist
 const code = result.outputFiles[0].contents;
 await mkdir(new URL("../dist/", import.meta.url), { recursive: true });
-await writeFile(new URL("../dist/tikzcd-katex.min.js", import.meta.url), code);
+await writeFile(new URL("../dist/tikzcd-katex.js", import.meta.url), code);
